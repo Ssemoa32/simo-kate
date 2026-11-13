@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Marik — Voice Bot</title>
+  <style>
+    :root {
+      /* Theme: Black Ice */
+      --eye-color: #7fdfff;
+      --eye-glow: rgba(127, 223, 255, 0.8);
+      --accent: #5ec8ff;
+      --bg-1: #070912;
+      --bg-2: #111a2e;
+      --panel: rgba(255,255,255,0.07);
+      --panel-strong: rgba(255,255,255,0.12);
+      --border: rgba(127,223,255,0.2);
+      --shell-1: #1a2030;
+      --shell-2: #0a0d16;
+      --cheek: rgba(127, 223, 255, 0.35);
+    }
+    body.theme-pink {
+      --eye-color: #ff8fcf;
+      --eye-glow: rgba(255, 143, 207, 0.8);
+      --accent: #ff6bb5;
+      --bg-1: #1a0814;
+      --bg-2: #2e1130;
+      --border: rgba(255,143,207,0.22);
+      --shell-1: #2a1830;
+      --shell-2: #140818;
+      --cheek: rgba(255, 143, 207, 0.4);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at 50% 30%, var(--bg-2), var(--bg-1));
+      font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition: background 0.6s;
+      position: relative;
+    }
+
+    /* Snow particles */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .particle {
+      position: absolute; width: 4px; height: 4px;
+      background: rgba(255,255,255,0.5); border-radius: 50%;
+      animation: fall linear infinite;
+    }
+    @keyframes fall {
+      0% { transform: translateY(-10px) translateX(0); opacity:0; }
+      10% { opacity:0.7; }
+      90% { opacity:0.5; }
+      100% { transform: translateY(110vh) translateX(30px); opacity:0; }
+    }
+
+    /* ===== Layout: face + side icons ===== */
+    .app {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 20px;
+    }
+
+    /* ===== FACE STAGE ===== */
+    .stage {
+      position: relative;
+      width: 300px; height: 300px;
+      flex-shrink: 0;
+    }
+
+    .ring {
+      position: absolute; inset: -16px;
+      border-radius: 46%;
+      border: 3px solid transparent;
+      transition: all 0.4s; pointer-events: none;
+    }
+    .ring.listening { border-color: var(--eye-color); box-shadow: 0 0 30px var(--eye-glow); animation: pulseRing 1.4s infinite; }
+    .ring.speaking  { border-color: #ffd93d; box-shadow: 0 0 30px rgba(255,217,61,0.7); animation: pulseRing 0.9s infinite; }
+    .ring.thinking  { border-color: #b66dff; box-shadow: 0 0 30px rgba(182,109,255,0.7); animation: pulseRing 1.8s infinite; }
+    @keyframes pulseRing {
+      0%,100% { transform: scale(1); opacity:0.6; }
+      50% { transform: scale(1.05); opacity:1; }
+    }
+
+    .head {
+      position: absolute; inset: 0;
+      border-radius: 42%;
+      background: linear-gradient(150deg, var(--shell-1), var(--shell-2));
+      box-shadow: 0 22px 50px rgba(0,0,0,0.6), inset 0 -10px 26px rgba(0,0,0,0.5), inset 0 8px 20px rgba(255,255,255,0.07);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .head::before {
+      content: ""; position: absolute;
+      top: 14%; left: 50%; transform: translateX(-50%);
+      width: 42%; height: 9%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+      border-radius: 50%; filter: blur(3px);
+    }
+
+    .screen {
+      width: 76%; height: 64%;
+      background: #03040a;
+      border-radius: 30%;
+      position: relative; overflow: hidden;
+      box-shadow: inset 0 0 22px rgba(0,0,0,0.95), 0 0 2px rgba(255,255,255,0.08);
+    }
+    .screen-shine {
+      position: absolute; top:0; left:0; right:0; height:38%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.09), transparent);
+      border-radius: 30% 30% 50% 50%; pointer-events: none;
+    }
+
+    .face-svg {
+      position: absolute; top: 24%; left: 50%;
+      transform: translateX(-50%);
+      width: 82%; height: 52%;
+    }
+
+    .mouth {
+      position: absolute; bottom: 17%; left: 50%;
+      transform: translateX(-50%);
+      width: 13%; height: 4px;
+      background: var(--eye-color); border-radius: 4px;
+      box-shadow: 0 0 10px var(--eye-glow);
+      transition: all 0.12s ease;
+    }
+    .speaking .mouth { animation: talkMouth 0.16s infinite alternate ease-in-out; }
+    @keyframes talkMouth {
+      0% { height:4px; width:13%; border-radius:4px; }
+      100% { height:13px; width:10%; border-radius:50%; }
+    }
+    .expr-happy .mouth { width:22%; height:9px; border-radius:0 0 50% 50%; animation:none; }
+    .expr-sad .mouth { width:18%; height:8px; border-radius:50% 50% 0 0; animation:none; }
+    .expr-surprised .mouth { width:9%; height:12px; border-radius:50%; animation:none; }
+    .expr-sleepy .mouth { width:14%; height:3px; opacity:0.6; animation:none; }
+
+    .cheek {
+      position: absolute; bottom: 29%;
+      width: 14%; height: 7%;
+      background: var(--cheek); border-radius: 50%;
+      filter: blur(3px); opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .cheek.left { left: 13%; }
+    .cheek.right { right: 13%; }
+    .expr-happy .cheek, .expr-love .cheek, .expr-shy .cheek { opacity: 0.9; }
+
+    /* Bubbles */
+    .bubbles {
+      position: absolute; top: -6px; right: -4px;
+      display: flex; flex-direction: column; gap: 5px; z-index: 5;
+    }
+    .bubble {
+      background: var(--panel-strong);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      border-radius: 12px; padding: 4px 9px;
+      font-size: 0.74rem; color: #fff; white-space: nowrap;
+      opacity: 0; transform: translateY(6px) scale(0.9);
+      transition: all 0.3s; pointer-events: none;
+    }
+    .bubble.show { opacity:1; transform: translateY(0) scale(1); }
+
+    /* Caption under face */
+    .caption {
+      position: absolute;
+      bottom: -64px; left: 50%;
+      transform: translateX(-50%);
+      width: 340px; max-width: 90vw;
+      min-height: 50px;
+      text-align: center;
+      padding: 10px 16px;
+      font-size: 0.9rem; color: #e6e6e6;
+      background: var(--panel);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      line-height: 1.55;
+      backdrop-filter: blur(6px);
+    }
+    .caption .marik { color: var(--eye-color); font-weight: 700; }
+    .caption .you   { color: #ffd93d; font-weight: 700; }
+
+    /* ===== SIDE ICON PANEL ===== */
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 10px 8px;
+      backdrop-filter: blur(10px);
+      max-height: 460px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    .side-panel::-webkit-scrollbar { width: 4px; }
+    .side-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .icon-btn {
+      width: 46px; height: 46px;
+      border-radius: 14px;
+      background: var(--panel-strong);
+      border: 1px solid transparent;
+      color: #fff;
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.18); transform: scale(1.06); }
+    .icon-btn.active { background: var(--eye-color); color: #000; border-color: var(--eye-color); }
+    .icon-btn .tooltip {
+      position: absolute;
+      right: 56px; top: 50%;
+      transform: translateY(-50%);
+      background: #000;
+      color: #fff;
+      font-size: 0.72rem;
+      padding: 4px 9px;
+      border-radius: 8px;
+      white-space: nowrap;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .icon-btn:hover .tooltip { opacity: 1; }
+
+    .icon-btn.recording {
+      background: #ff4d4d; border-color: #ff4d4d; color: #fff;
+      animation: micPulse 1s infinite;
+    }
+    @keyframes micPulse {
+      0%,100% { box-shadow: 0 0 8px rgba(255,77,77,0.5); }
+      50% { box-shadow: 0 0 22px rgba(255,77,77,0.95); }
+    }
+
+    /* Divider in side panel */
+    .divider { height: 1px; background: var(--border); margin: 4px 6px; }
+
+    /* Section label */
+    .sec-label {
+      font-size: 0.62rem; color: #778;
+      text-align: center; margin: 2px 0;
+      letter-spacing: 0.5px;
+    }
+
+    /* ===== Popover panels (expressions, colors, phrases) ===== */
+    .popover {
+      position: absolute;
+      right: 70px; top: 50%;
+      transform: translateY(-50%) translateX(20px);
+      background: var(--panel-strong);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      backdrop-filter: blur(14px);
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 20;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      max-width: 240px;
+    }
+    .popover.open {
+      display: flex;
+      animation: popIn 0.25s ease;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-50%) translateX(20px); }
+      to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+    }
+    .popover-title {
+      font-size: 0.72rem; color: #9ab; margin-bottom: 2px;
+    }
+
+    .pop-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pop-grid.exprs .icon-btn { width: 38px; height: 38px; font-size: 1.1rem; }
+    .pop-grid.colors .color-dot {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.25);
+      cursor: pointer; transition: transform 0.2s;
+    }
+    .pop-grid.colors .color-dot:hover,
+    .pop-grid.colors .color-dot.active { transform: scale(1.2); border-color: #fff; }
+
+    .pop-phrase {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: #dde;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-align: right;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .pop-phrase:hover { background: rgba(255,255,255,0.14); border-color: var(--eye-color); }
+
+    /* Backdrop to close popovers */
+    .backdrop {
+      position: fixed; inset: 0;
+      z-index: 15;
+      display: none;
+    }
+    .backdrop.show { display: block; }
+
+    /* Volume indicator */
+    .vol-bar {
+      width: 4px;
+      background: var(--eye-color);
+      border-radius: 2px;
+      transition: height 0.1s;
+    }
+
+    @media (max-width: 420px) {
+      .stage { width: 240px; height: 240px; }
+      .app { gap: 10px; padding: 12px; }
+      .side-panel { padding: 8px 6px; }
+      .icon-btn { width: 40px; height: 40px; font-size: 1.1rem; }
+      .caption { width: 280px; bottom: -58px; }
+    }
+  </style>
+</head>
+<body class="theme-ice">
+
+  <div class="particles" id="particles"></div>
+
+  <div class="app">
+
+    <!-- ===== FACE ===== -->
+    <div class="stage" id="stage">
+      <div class="ring" id="ring"></div>
+      <div class="head">
+        <div class="screen">
+          <div class="screen-shine"></div>
+
+          <svg class="face-svg" id="faceSvg" viewBox="0 0 200 110" preserveAspectRatio="xMidYMid meet">
+            <g id="eyeL">
+              <ellipse cx="55" cy="55" rx="28" ry="34" fill="var(--eye-color)" filter="url(#glowL)"/>
+              <circle cx="62" cy="44" r="6" fill="rgba(255,255,255,0.85)"/>
+            </g>
+            <g id="eyeR">
+              <ellipse cx="145" cy="55" rx="28" ry="34" fill="var(--eye-color)" filter="url(#glowR)"/>
+              <circle cx="152" cy="44" r="6" fill="rgba(255,255,255,0.85)"/>
+            </g>
+            <defs>
+              <filter id="glowL" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="4" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glowR" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="4" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+          </svg>
+
+          <div class="cheek left"></div>
+          <div class="cheek right"></div>
+          <div class="mouth" id="mouth"></div>
+
+          <div class="bubbles" id="bubbles">
+            <div class="bubble" id="bubble1"></div>
+            <div class="bubble" id="bubble2"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Caption -->
+      <div class="caption" id="caption">
+        <span class="marik">Marik:</span> اضغط المايك وابدأ الكلام معي 🎤
+      </div>
+    </div>
+
+    <!-- ===== SIDE ICON PANEL ===== -->
+    <div class="side-panel" id="sidePanel">
+
+      <!-- Mic (auto-listen) -->
+      <button class="icon-btn active" id="micIcon" title="مايك">
+        🎙️
+        <span class="tooltip">استماع</span>
+      </button>
+
+      <!-- Greet -->
+      <button class="icon-btn" id="greetIcon" title="ترحيب">
+        👋
+        <span class="tooltip">رحّب</span>
+      </button>
+
+      <!-- Joke -->
+      <button class="icon-btn" id="jokeIcon" title="نكتة">
+        😂
+        <span class="tooltip">نكتة</span>
+      </button>
+
+      <!-- Stop -->
+      <button class="icon-btn" id="stopIcon" title="إيقاف">
+        ⏹️
+        <span class="tooltip">إيقاف</span>
+      </button>
+
+      <div class="divider"></div>
+      <div class="sec-label">تعبير</div>
+
+      <!-- Expressions -->
+      <button class="icon-btn" id="exprIcon" title="تعبيرات">
+        😊
+        <span class="tooltip">تعبيرات</span>
+      </button>
+
+      <div class="divider"></div>
+      <div class="sec-label">لون</div>
+
+      <!-- Colors -->
+      <button class="icon-btn" id="colorIcon" title="ألوان">
+        🎨
+        <span class="tooltip">ألوان</span>
+      </button>
+
+      <!-- Theme -->
+      <button class="icon-btn" id="themeIcon" title="ثيم">
+        🧊
+        <span class="tooltip">ثيم</span>
+      </button>
+
+      <div class="divider"></div>
+      <div class="sec-label">جمل</div>
+
+      <!-- Phrases -->
+      <button class="icon-btn" id="phraseIcon" title="جمل">
+        💬
+        <span class="tooltip">جمل جاهزة</span>
+      </button>
+
+    </div>
+
+    <!-- ===== POPOVERS ===== -->
+    <div class="backdrop" id="backdrop"></div>
+
+    <!-- Expressions popover -->
+    <div class="popover" id="exprPop">
+      <div class="popover-title">اختر تعبير</div>
+      <div class="pop-grid exprs">
+        <button class="icon-btn active" data-expr="neutral">😐</button>
+        <button class="icon-btn" data-expr="happy">😄</button>
+        <button class="icon-btn" data-expr="sad">😢</button>
+        <button class="icon-btn" data-expr="surprised">😲</button>
+        <button class="icon-btn" data-expr="love">😍</button>
+        <button class="icon-btn" data-expr="sleepy">😴</button>
+        <button class="icon-btn" data-expr="wink">😉</button>
+        <button class="icon-btn" data-expr="shy">😳</button>
+        <button class="icon-btn" data-expr="angry">😠</button>
+      </div>
+    </div>
+
+    <!-- Colors popover -->
+    <div class="popover" id="colorPop">
+      <div class="popover-title">لون العيون</div>
+      <div class="pop-grid colors">
+        <div class="color-dot active" style="background:#7fdfff;box-shadow:0 0 8px #7fdfff" data-c="#7fdfff" data-g="rgba(127,223,255,0.8)"></div>
+        <div class="color-dot" style="background:#ff8fcf;box-shadow:0 0 8px #ff8fcf" data-c="#ff8fcf" data-g="rgba(255,143,207,0.8)"></div>
+        <div class="color-dot" style="background:#b66dff;box-shadow:0 0 8px #b66dff" data-c="#b66dff" data-g="rgba(182,109,255,0.8)"></div>
+        <div class="color-dot" style="background:#39ff14;box-shadow:0 0 8px #39ff14" data-c="#39ff14" data-g="rgba(57,255,20,0.8)"></div>
+        <div class="color-dot" style="background:#ffd93d;box-shadow:0 0 8px #ffd93d" data-c="#ffd93d" data-g="rgba(255,217,61,0.8)"></div>
+        <div class="color-dot" style="background:#ff4d4d;box-shadow:0 0 8px #ff4d4d" data-c="#ff4d4d" data-g="rgba(255,77,77,0.8)"></div>
+      </div>
+    </div>
+
+    <!-- Phrases popover -->
+    <div class="popover" id="phrasePop">
+      <div class="popover-title">جمل جاهزة</div>
+      <button class="pop-phrase">مرحباً! أنا Marik، تشرفت بلقائك</button>
+      <button class="pop-phrase">كيف حالك اليوم يا صديقي؟</button>
+      <button class="pop-phrase">أنا روبوت صغير لكن قلبي كبير</button>
+      <button class="pop-phrase">إيش رأيك نلعب لعبة كلمات؟</button>
+      <button class="pop-phrase">شكراً لك، أنت شخص رائع</button>
+    </div>
+
+  </div>
+
+  <audio id="ttsAudio" preload="auto"></audio>
+
+  <script>
+    /* =========================================================
+       Marik — clean voice bot with side settings icons
+       Mic auto-starts on first interaction
+       ========================================================= */
+
+    const root = document.documentElement;
+    const body = document.body;
+    const ring = document.getElementById('ring');
+    const stage = document.getElementById('stage');
+    const caption = document.getElementById('caption');
+    const ttsAudio = document.getElementById('ttsAudio');
+    const eyeL = document.getElementById('eyeL');
+    const eyeR = document.getElementById('eyeR');
+    const bubble1 = document.getElementById('bubble1');
+    const bubble2 = document.getElementById('bubble2');
+    const backdrop = document.getElementById('backdrop');
+
+    /* ---------- Snow ---------- */
+    (function(){
+      const c = document.getElementById('particles');
+      for (let i=0;i<26;i++){
+        const p = document.createElement('div');
+        p.className='particle';
+        p.style.left = Math.random()*100 + '%';
+        p.style.animationDuration = (6 + Math.random()*8) + 's';
+        p.style.animationDelay = (-Math.random()*10) + 's';
+        p.style.opacity = 0.3 + Math.random()*0.5;
+        const s = 2 + Math.random()*4;
+        p.style.width = s+'px'; p.style.height = s+'px';
+        c.appendChild(p);
+      }
+    })();
+
+    /* ---------- Theme ---------- */
+    let isPink = false;
+    const themeIcon = document.getElementById('themeIcon');
+    themeIcon.addEventListener('click', () => {
+      isPink = !isPink;
+      body.classList.toggle('theme-pink', isPink);
+      body.classList.toggle('theme-ice', !isPink);
+      themeIcon.textContent = isPink ? '🌸' : '🧊';
+    });
+
+    /* ---------- Popover toggle ---------- */
+    function openPopover(id) {
+      document.querySelectorAll('.popover').forEach(p => p.classList.remove('open'));
+      backdrop.classList.add('show');
+      const pop = document.getElementById(id);
+      pop.classList.add('open');
+      // Position popover to the left of the side panel
+      const panel = document.getElementById('sidePanel');
+      const rect = panel.getBoundingClientRect();
+      pop.style.right = (window.innerWidth - rect.left + 10) + 'px';
+      pop.style.top = '50%';
+    }
+    function closePopovers() {
+      document.querySelectorAll('.popover').forEach(p => p.classList.remove('open'));
+      backdrop.classList.remove('show');
+    }
+    backdrop.addEventListener('click', closePopovers);
+
+    document.getElementById('exprIcon').addEventListener('click', () => openPopover('exprPop'));
+    document.getElementById('colorIcon').addEventListener('click', () => openPopover('colorPop'));
+    document.getElementById('phraseIcon').addEventListener('click', () => openPopover('phrasePop'));
+
+    /* ---------- Color dots ---------- */
+    document.querySelectorAll('.color-dot').forEach(d => {
+      d.addEventListener('click', () => {
+        document.querySelectorAll('.color-dot').forEach(x=>x.classList.remove('active'));
+        d.classList.add('active');
+        root.style.setProperty('--eye-color', d.dataset.c);
+        root.style.setProperty('--eye-glow', d.dataset.g);
+      });
+    });
+
+    /* ---------- Expressions ---------- */
+    const expressions = {
+      neutral: {
+        L:'<ellipse cx="55" cy="55" rx="28" ry="34" fill="var(--eye-color)"/><circle cx="62" cy="44" r="6" fill="rgba(255,255,255,0.85)"/>',
+        R:'<ellipse cx="145" cy="55" rx="28" ry="34" fill="var(--eye-color)"/><circle cx="152" cy="44" r="6" fill="rgba(255,255,255,0.85)"/>'
+      },
+      happy: {
+        L:'<path d="M30,60 Q55,25 80,60" stroke="var(--eye-color)" stroke-width="14" fill="none" stroke-linecap="round"/>',
+        R:'<path d="M120,60 Q145,25 170,60" stroke="var(--eye-color)" stroke-width="14" fill="none" stroke-linecap="round"/>'
+      },
+      sad: {
+        L:'<path d="M30,45 Q55,75 80,45" stroke="var(--eye-color)" stroke-width="14" fill="none" stroke-linecap="round"/>',
+        R:'<path d="M120,45 Q145,75 170,45" stroke="var(--eye-color)" stroke-width="14" fill="none" stroke-linecap="round"/>'
+      },
+      surprised: {
+        L:'<circle cx="55" cy="55" r="22" fill="var(--eye-color)"/><circle cx="60" cy="48" r="5" fill="rgba(255,255,255,0.85)"/>',
+        R:'<circle cx="145" cy="55" r="22" fill="var(--eye-color)"/><circle cx="150" cy="48" r="5" fill="rgba(255,255,255,0.85)"/>'
+      },
+      love: {
+        L:'<path d="M55,70 C30,50 35,25 55,35 C75,25 80,50 55,70 Z" fill="#ff4d6d"/>',
+        R:'<path d="M145,70 C120,50 125,25 145,35 C165,25 170,50 145,70 Z" fill="#ff4d6d"/>'
+      },
+      sleepy: {
+        L:'<path d="M30,55 Q55,55 80,55" stroke="var(--eye-color)" stroke-width="10" fill="none" stroke-linecap="round"/>',
+        R:'<path d="M120,55 Q145,55 170,55" stroke="var(--eye-color)" stroke-width="10" fill="none" stroke-linecap="round"/>'
+      },
+      wink: {
+        L:'<ellipse cx="55" cy="55" rx="28" ry="34" fill="var(--eye-color)"/><circle cx="62" cy="44" r="6" fill="rgba(255,255,255,0.85)"/>',
+        R:'<path d="M120,55 Q145,55 170,55" stroke="var(--eye-color)" stroke-width="12" fill="none" stroke-linecap="round"/>'
+      },
+      shy: {
+        L:'<ellipse cx="55" cy="58" rx="24" ry="20" fill="var(--eye-color)"/><circle cx="60" cy="52" r="5" fill="rgba(255,255,255,0.8)"/>',
+        R:'<ellipse cx="145" cy="58" rx="24" ry="20" fill="var(--eye-color)"/><circle cx="150" cy="52" r="5" fill="rgba(255,255,255,0.8)"/>'
+      },
+      angry: {
+        L:'<path d="M28,40 L82,55" stroke="var(--eye-color)" stroke-width="10" stroke-linecap="round"/><ellipse cx="55" cy="62" rx="18" ry="14" fill="var(--eye-color)"/>',
+        R:'<path d="M172,40 L118,55" stroke="var(--eye-color)" stroke-width="10" stroke-linecap="round"/><ellipse cx="145" cy="62" rx="18" ry="14" fill="var(--eye-color)"/>'
+      }
+    };
+
+    function setExpression(name) {
+      const ex = expressions[name] || expressions.neutral;
+      eyeL.innerHTML = ex.L;
+      eyeR.innerHTML = ex.R;
+      stage.className = 'stage';
+      if (name !== 'neutral') stage.classList.add('expr-' + name);
+      document.querySelectorAll('#exprPop .icon-btn').forEach(b => b.classList.toggle('active', b.dataset.expr === name));
+    }
+
+    document.querySelectorAll('#exprPop .icon-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        setExpression(b.dataset.expr);
+        showBubble(b.dataset.expr);
+        closePopovers();
+      });
+    });
+
+    /* ---------- Bubbles ---------- */
+    const bubbleTexts = {
+      happy:['ياي! 😄','سعيد!'], sad:['أوه... 😢','حزين'],
+      surprised:['واااو! 😲','مفاجأة!'], love:['أحبك ❤️','قلبي'],
+      sleepy:['نعساان 😴','تصبحون'], wink:'غمزة 😉',
+      shy:'خجلان 😳', angry:'متعصب 😠', neutral:null
+    };
+    function showBubble(name) {
+      const txt = bubbleTexts[name];
+      bubble1.classList.remove('show'); bubble2.classList.remove('show');
+      if (!txt) return;
+      if (Array.isArray(txt)) {
+        bubble1.textContent = txt[0]; bubble1.classList.add('show');
+        bubble2.textContent = txt[1]; bubble2.classList.add('show');
+      } else {
+        bubble1.textContent = txt; bubble1.classList.add('show');
+      }
+    }
+
+    /* ---------- Mode ---------- */
+    function setMode(mode) {
+      ring.classList.remove('listening','speaking','thinking');
+      stage.classList.remove('speaking');
+      if (mode === 'listening') ring.classList.add('listening');
+      else if (mode === 'speaking') { ring.classList.add('speaking'); stage.classList.add('speaking'); }
+      else if (mode === 'thinking') ring.classList.add('thinking');
+    }
+
+    /* =========================================================
+       CUSTOM TTS — multiple endpoints for reliability
+       1) Google Translate TTS (fetch audio file)
+       2) Fallback: VoiceRSS-style / direct audio src
+       3) Final fallback: Web Speech API
+       ========================================================= */
+    function customTTS(text, onEnd) {
+      const cleaned = text.replace(/[<>&#]/g,'').slice(0, 200);
+      setMode('speaking');
+      caption.innerHTML = '<span class="marik">Marik:</span> ' + text;
+
+      // Build Google Translate TTS URL (returns mp3)
+      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ar&q=' + encodeURIComponent(cleaned);
+
+      // Method 1: direct audio src (most reliable, no CORS issue for <audio>)
+      ttsAudio.crossOrigin = 'anonymous';
+      ttsAudio.src = url;
+      ttsAudio.load();
+
+      let ended = false;
+      const finish = () => {
+        if (ended) return;
+        ended = true;
+        if (onEnd) onEnd();
+        else setMode('idle');
+      };
+
+      ttsAudio.oncanplay = () => {
+        ttsAudio.play().catch(() => {
+          // play blocked → try WebSpeech
+          webSpeechFallback(text, onEnd);
+        });
+      };
+      ttsAudio.onended = () => { finish(); };
+      ttsAudio.onerror = () => {
+        // direct src failed (CORS) → try fetch blob
+        fetch(url)
+          .then(r => r.blob())
+          .then(blob => {
+            ttsAudio.crossOrigin = null;
+            ttsAudio.src = URL.createObjectURL(blob);
+            ttsAudio.load();
+            ttsAudio.oncanplay = () => ttsAudio.play().catch(() => webSpeechFallback(text, onEnd));
+            ttsAudio.onended = () => { URL.revokeObjectURL(ttsAudio.src); finish(); };
+            ttsAudio.onerror = () => webSpeechFallback(text, onEnd);
+          })
+          .catch(() => webSpeechFallback(text, onEnd));
+      };
+
+      // Safety timeout: if nothing happens in 6s, try WebSpeech
+      setTimeout(() => {
+        if (!ended && ttsAudio.readyState < 2) webSpeechFallback(text, onEnd);
+      }, 6000);
+    }
+
+    function webSpeechFallback(text, onEnd) {
+      const synth = window.speechSynthesis;
+      if (!synth) { setMode('idle'); return; }
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ar-SA';
+      u.rate = 1.0; u.pitch = 1.5; u.volume = 1;
+      const voices = synth.getVoices();
+      const arV = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
+      if (arV) u.voice = arV;
+      u.onend = () => { if (onEnd) onEnd(); else setMode('idle'); };
+      u.onerror = () => setMode('idle');
+      synth.speak(u);
+    }
+
+    /* ---------- Speak ---------- */
+    function marikSay(text, expr) {
+      const e = expr || 'happy';
+      setExpression(e);
+      showBubble(e);
+      customTTS(text, () => {
+        setMode('idle');
+        setTimeout(() => {
+          if (ring.classList.contains('speaking') || ring.classList.contains('listening')) return;
+          setExpression('neutral'); showBubble('neutral');
+        }, 1500);
+        // Auto-resume listening after speaking
+        setTimeout(() => { startListening(); }, 600);
+      });
+    }
+
+    /* ---------- Greet / Joke / Stop ---------- */
+    const welcomes = [
+      {t:'أهلاً وسهلاً! أنا Marik، سعيد جداً بلقائك. كيف حالك اليوم؟', e:'happy'},
+      {t:'مرحباً يا صديقي! تشرفت بمعرفتك. إيش حابب نسوي؟', e:'wink'},
+      {t:'هلا والله! اسمي Marik وأنا روبوت مرح. خلك معي!', e:'happy'},
+      {t:'السلام عليكم ورحمة الله! نورتني يا غالي.', e:'shy'}
+    ];
+    document.getElementById('greetIcon').addEventListener('click', () => {
+      const w = welcomes[Math.floor(Math.random()*welcomes.length)];
+      marikSay(w.t, w.e);
+    });
+
+    const jokes = [
+      {t:'ليش الروبوت ما يقدر يأكل؟ لأنه يخاف ينقص بطاريته هههه!', e:'happy'},
+      {t:'إيش قال الروبوت للكمبيوتر؟ عندي ذاكرة بس ناسي!', e:'wink'},
+      {t:'مارك اخترع الروبوت اليلعب شطرنج؟ عشان ما يخسر قدامنا!', e:'surprised'},
+      {t:'أنا Marik وما أعرف أنام، بس لو نمت... مين بيفيقني؟', e:'sleepy'}
+    ];
+    document.getElementById('jokeIcon').addEventListener('click', () => {
+      const j = jokes[Math.floor(Math.random()*jokes.length)];
+      marikSay(j.t, j.e);
+    });
+
+    document.getElementById('stopIcon').addEventListener('click', () => {
+      ttsAudio.pause();
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      stopListening();
+      setMode('idle');
+      setExpression('neutral');
+      showBubble('neutral');
+      caption.innerHTML = '<span class="marik">Marik:</span> حسناً، توقفت. اضغط المايك للبدء من جديد 🎤';
+    });
+
+    /* ---------- Phrases ---------- */
+    document.querySelectorAll('.pop-phrase').forEach(p => {
+      p.addEventListener('click', () => {
+        marikSay(p.textContent, 'happy');
+        closePopovers();
+      });
+    });
+
+    /* ---------- Speech recognition (auto-listen) ---------- */
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null, recognizing = false, autoListen = true;
+    const micIcon = document.getElementById('micIcon');
+
+    if (SR) {
+      recognition = new SR();
+      recognition.lang = 'ar-SA';
+      recognition.continuous = false;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        recognizing = true;
+        micIcon.classList.add('recording');
+        setMode('listening');
+        setExpression('surprised');
+        showBubble('surprised');
+        caption.innerHTML = '<span class="you">أنت:</span> ...أستمع';
+      };
+      recognition.onresult = (e) => {
+        let interim='', final='';
+        for (let i=e.resultIndex;i<e.results.length;i++){
+          const tr = e.results[i][0].transcript;
+          if (e.results[i].isFinal) final+=tr; else interim+=tr;
+        }
+        caption.innerHTML = '<span class="you">أنت:</span> ' + (final||interim);
+        if (final) { autoListen = false; replyToUser(final.trim()); }
+      };
+      recognition.onerror = (e) => {
+        if (e.error === 'not-allowed')
+          caption.innerHTML = '⚠️ اسمح باستخدام الميكروفون من إعدادات المتصفح.';
+        else if (e.error === 'no-speech') {
+          // auto-restart on no-speech if still in listening mode
+          if (autoListen) { setTimeout(() => startListening(), 400); return; }
+        } else {
+          caption.innerHTML = '⚠️ خطأ: ' + e.error;
+        }
+        stopListening();
+      };
+      recognition.onend = () => {
+        stopListening();
+        // Auto-restart listening if mode is still auto
+        if (autoListen && !ring.classList.contains('speaking')) {
+          setTimeout(() => startListening(), 500);
+        }
+      };
+    }
+
+    function startListening() {
+      if (!recognition || recognizing) return;
+      if (window.speechSynthesis && window.speechSynthesis.speaking) return;
+      try { recognition.start(); } catch(e){ /* already started */ }
+    }
+    function stopListening() {
+      recognizing = false;
+      micIcon.classList.remove('recording');
+    }
+
+    micIcon.addEventListener('click', () => {
+      if (recognizing) {
+        autoListen = false;
+        recognition.stop();
+        micIcon.classList.remove('active');
+      } else {
+        autoListen = true;
+        micIcon.classList.add('active');
+        startListening();
+      }
+    });
+
+    /* ---------- Conversation ---------- */
+    function replyToUser(text) {
+      const t = text.toLowerCase();
+      let reply, expr;
+      if (/(سلام|السلام|أهلا|اهلا|مرحب|هلا|هاي|hello|hi)/.test(t)) {
+        reply='وعليكم السلام! أهلاً بك يا صديقي. إيش حابب نسوي اليوم؟'; expr='happy';
+      } else if (/(كيف حالك|كيفك|عامل ايه|شلونك|كيف الحال|اخبارك)/.test(t)) {
+        reply='أنا بخير والحمد لله، شكراً لسؤالك! وأنت كيف حالك؟'; expr='happy';
+      } else if (/(اسمك|من انت|مين انت|تعرف نفسك)/.test(t)) {
+        reply='أنا Marik، روبوت صغير ظريف، أحب أتكلم مع الناس الطيبين مثلك!'; expr='wink';
+      } else if (/(شكرا|مشكور|تسلم|thanks|thank)/.test(t)) {
+        reply='العفو يا غالي! هذا واجبي. أي خدمة ثانية؟'; expr='shy';
+      } else if (/(باي|مع السلامة|وداع|تصبح على خير)/.test(t)) {
+        reply='مع السلامة! كان وقت جميل معاك. ترجع متى ما حبيت.'; expr='sleepy';
+      } else if (/(احبك|حبيت|sweet|love)/.test(t)) {
+        reply='وأنا كمان أحبك يا صديقي!'; expr='love';
+      } else if (/(نكتة|ضحكني|اضحك|joke)/.test(t)) {
+        reply='ليش الروبوت ما يأكل؟ لأنه يخاف بطاريته تنقص! هههه'; expr='happy';
+      } else if (/(تعبان|حزين|زعلان|sad)/.test(t)) {
+        reply='لا تحزن يا صديقي، أنا معك. إيش صار؟ احكِ لي.'; expr='sad';
+      } else if (/(نعسان|sleep|sleepy)/.test(t)) {
+        reply='تعال نرقد شوي... تصبح على خير.'; expr='sleepy';
+      } else if (/(غاضب|زعلت|angry)/.test(t)) {
+        reply='لا تغضب، خذ نفس عميق. أنا هنا عشانك.'; expr='angry';
+      } else {
+        const fb=[
+          {t:'تمام! فهمت كلامك. احكِ لي أكثر.', e:'happy'},
+          {t:'كلامك حلو! إيش بعد كذا؟', e:'wink'},
+          {t:'أها، مثير للاهتمام. تابع أنا معك.', e:'surprised'},
+          {t:'حلو! خلينا نكمل الحديث.', e:'happy'}
+        ];
+        const f=fb[Math.floor(Math.random()*fb.length)];
+        reply=f.t; expr=f.e;
+      }
+      marikSay(reply, expr);
+    }
+
+    /* ---------- Auto start: greet + listen on first interaction ---------- */
+    let started = false;
+    function firstInteraction() {
+      if (started) return;
+      started = true;
+      // Greet first, then auto-listen
+      marikSay('أهلاً! أنا Marik، أنا أستمع لك الآن... تكلم!', 'happy');
+    }
+    window.addEventListener('load', () => {
+      // Browsers require a user gesture for audio/mic
+      const trigger = () => {
+        firstInteraction();
+        document.removeEventListener('click', trigger);
+        document.removeEventListener('touchstart', trigger);
+      };
+      document.addEventListener('click', trigger, { once: true });
+      document.addEventListener('touchstart', trigger, { once: true });
+    });
+  </script>
+</body>
+</html>
