@@ -1,11 +1,12 @@
 import { Fragment } from 'react';
 import type { ReactNode } from 'react';
-import { Mic, MicOff, Hand, Laugh, Square, Smile, Palette, Snowflake, Flower2, MessageCircle } from 'lucide-react';
+import { Mic, MicOff, Hand, Laugh, Square, Settings } from 'lucide-react';
 import type { SidePanelProps } from '../types';
 
 interface RailItem {
   id: string;
   label: string;
+  text: string;
   icon: ReactNode;
   onClick: () => void;
   className?: string;
@@ -16,13 +17,9 @@ interface RailItem {
 
 const ICON_SIZE = 20;
 const ICON_STROKE = 2;
-const iconStyle = { filter: 'drop-shadow(0 0 4px currentColor)' } as const;
 
 export default function SidePanel(props: SidePanelProps) {
-  const {
-    listening, micOn, micSupported, character,
-    onMic, onGreet, onJoke, onStop, onOpen, onTheme,
-  } = props;
+  const { listening, micOn, micSupported, onMic, onGreet, onJoke, onStop, onOpen } = props;
 
   const micClass = listening ? 'mic recording' : 'mic';
   const micLabel = !micSupported
@@ -35,8 +32,9 @@ export default function SidePanel(props: SidePanelProps) {
     {
       id: 'mic',
       label: micLabel,
+      text: 'مايك',
       icon: micSupported
-        ? <Mic size={ICON_SIZE} strokeWidth={ICON_STROKE} style={iconStyle} aria-hidden="true" />
+        ? <Mic size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
         : <MicOff size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />,
       onClick: onMic,
       className: micClass,
@@ -46,48 +44,32 @@ export default function SidePanel(props: SidePanelProps) {
     {
       id: 'greet',
       label: 'رحّب',
-      icon: <Hand size={ICON_SIZE} strokeWidth={ICON_STROKE} style={iconStyle} aria-hidden="true" />,
+      text: 'رحّب',
+      icon: <Hand size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />,
       onClick: onGreet,
     },
     {
       id: 'joke',
       label: 'نكتة',
-      icon: <Laugh size={ICON_SIZE} strokeWidth={ICON_STROKE} style={iconStyle} aria-hidden="true" />,
+      text: 'نكتة',
+      icon: <Laugh size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />,
       onClick: onJoke,
     },
     {
       id: 'stop',
       label: 'إيقاف',
-      icon: <Square size={ICON_SIZE} strokeWidth={ICON_STROKE} style={iconStyle} aria-hidden="true" />,
+      text: 'إيقاف',
+      icon: <Square size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />,
       onClick: onStop,
       divideAfter: true,
     },
     {
-      id: 'expr',
-      label: 'تعبيرات',
-      icon: <Smile size={ICON_SIZE} strokeWidth={ICON_STROKE} style={iconStyle} aria-hidden="true" />,
-      onClick: () => onOpen('expr'),
-    },
-    {
-      id: 'color',
-      label: 'ألوان',
-      icon: <Palette size={ICON_SIZE} strokeWidth={ICON_STROKE} style={iconStyle} aria-hidden="true" />,
-      onClick: () => onOpen('color'),
-    },
-    {
-      id: 'theme',
-      label: character === 'simo' ? 'ثيم: كاتي الوردية' : 'ثيم: سيمو الأسود',
-      icon: character === 'simo'
-        ? <Snowflake size={ICON_SIZE} strokeWidth={ICON_STROKE} style={iconStyle} aria-hidden="true" />
-        : <Flower2 size={ICON_SIZE} strokeWidth={ICON_STROKE} style={iconStyle} aria-hidden="true" />,
-      onClick: onTheme,
-      divideAfter: true,
-    },
-    {
-      id: 'phrase',
-      label: 'جمل جاهزة',
-      icon: <MessageCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} style={iconStyle} aria-hidden="true" />,
-      onClick: () => onOpen('phrase'),
+      id: 'settings',
+      label: 'الإعدادات',
+      text: 'الإعدادات',
+      icon: <Settings size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />,
+      onClick: () => onOpen('settings'),
+      className: 'settings-btn',
     },
   ];
 
@@ -104,11 +86,9 @@ export default function SidePanel(props: SidePanelProps) {
             onClick={it.onClick}
           >
             {it.icon}
-            <span className="tooltip" aria-hidden="true">{it.label}</span>
+            <span className="btn-label">{it.text}</span>
           </button>
-          {it.divideAfter && (
-            <div role="separator" className="rail-sep" />
-          )}
+          {it.divideAfter && <div role="separator" className="rail-sep" />}
         </Fragment>
       ))}
     </nav>

@@ -118,15 +118,15 @@ function eyesFor(expression: Expression): { left: ReactElement; right: ReactElem
 }
 
 const FACE_CSS = `
-.face-head-shine{position:absolute;top:14%;left:50%;transform:translateX(-50%);width:42%;height:9%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);border-radius:50%;filter:blur(3px);pointer-events:none}
-.face-screen{width:76%;height:64%;background:#03040a;border-radius:30%;position:relative;overflow:hidden;direction:ltr;container-type:size;box-shadow:inset 0 0 22px rgba(0,0,0,.95),0 0 2px rgba(255,255,255,.08),0 0 0 1px rgba(33,230,255,.12)}
+.face-head-shine{position:absolute;top:10%;left:50%;transform:translateX(-50%);width:42%;height:7%;background:rgba(255,246,227,.35);border-radius:999px;pointer-events:none}
+.face-screen{width:76%;height:64%;background:#1b1410;border-radius:30%;position:relative;overflow:hidden;direction:ltr;container-type:size;border:4px solid #3B2416;box-shadow:inset 0 0 0 2px #7A5A43}
 .face-shine{position:absolute;top:0;left:0;right:0;height:38%;background:linear-gradient(180deg,rgba(255,255,255,.09),transparent);border-radius:30% 30% 50% 50%;pointer-events:none}
 .face-svg{position:absolute;top:24%;left:50%;transform:translateX(-50%);width:82%;height:52%;overflow:visible}
-.face-eyes{filter:drop-shadow(0 0 6px var(--eye-glow))}
+.face-eyes{filter:none}
 .face-eye{transform-box:fill-box;transform-origin:center;animation:faceBlink 5s infinite}
 .face-eye.r{animation-delay:.04s}
 .face-thinking .face-eyes{animation:faceGlance 1.8s infinite ease-in-out}
-.face-mouth{position:absolute;bottom:17%;left:50%;transform:translateX(-50%);width:13%;height:4px;height:2.1cqh;background:var(--eye-color);border-radius:4px;box-shadow:0 0 10px var(--eye-glow);transition:all .12s ease}
+.face-mouth{position:absolute;bottom:17%;left:50%;transform:translateX(-50%);width:13%;height:4px;height:2.1cqh;background:var(--eye-color);border-radius:4px;box-shadow:none;transition:all .12s ease}
 .face-speaking .face-mouth{animation:faceTalk .16s infinite alternate ease-in-out}
 .expr-happy .face-mouth,.expr-love .face-mouth{width:22%;height:9px;height:4.7cqh;border-radius:0 0 50% 50%;animation:none}
 .expr-wink .face-mouth,.expr-shy .face-mouth{width:16%;height:7px;height:3.6cqh;border-radius:0 0 50% 50%;animation:none}
@@ -141,7 +141,7 @@ const FACE_CSS = `
 .face-mood{display:block;font-family:var(--font-label);font-size:var(--text-xs);letter-spacing:.12em;text-transform:uppercase;color:var(--eye-color);animation:faceMood .2s ease-out both}
 .caption-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:var(--space-2)}
 .face-caption-line{margin:0}
-.face-caption-who{font-weight:700}
+.face-caption-who{font-weight:800}
 .face-caption-who.bot{color:var(--eye-color)}
 .face-caption-who.you{color:var(--warning)}
 .face-caption-text{overflow-wrap:anywhere}
@@ -154,7 +154,7 @@ const FACE_CSS = `
 `;
 
 export default function Face(props: FaceProps): ReactElement {
-  const { expression, mode, caption, bubbles, characterName, onRetry } = props;
+  const { expression, mode, caption, bubbles, characterName, onRetry, children } = props;
   const eyes = eyesFor(expression);
 
   const stageClass = [
@@ -225,6 +225,7 @@ export default function Face(props: FaceProps): ReactElement {
           )}
         </div>
       </div>
+      {children}
     </div>
   );
 }

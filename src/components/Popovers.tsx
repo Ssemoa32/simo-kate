@@ -16,7 +16,7 @@ const EXPRESSIONS: { id: Expression; label: string }[] = [
 ];
 
 const dot = (cx: number, cy: number, r: number): ReactNode => (
-  <circle cx={cx} cy={cy} r={r} fill="rgba(255,255,255,0.7)" />
+  <circle cx={cx} cy={cy} r={r} fill="var(--surface)" />
 );
 
 const stroke = (d: string, w = 14): ReactNode => (
@@ -109,7 +109,7 @@ function MiniFace({ id }: { id: Expression }) {
 }
 
 export default function Popovers(props: PopoversProps) {
-  const { open, expression, eyeColor, onExpression, onColor, onPhrase, onClose } = props;
+  const { open, expression, eyeColor, onExpression, onColor, onPhrase, onClose, character, onTheme, onPick } = props;
 
   useEffect(() => {
     if (!open) return;
@@ -132,6 +132,18 @@ export default function Popovers(props: PopoversProps) {
         onClick={onClose}
         style={{ background: 'transparent', border: 'none', cursor: 'default' }}
       />
+
+      {open === 'settings' && (
+        <div className="popover" role="dialog" aria-label="الإعدادات">
+          <h2 className="label">الإعدادات</h2>
+          <button type="button" className="list-row" onClick={() => onPick('expr')}>تعبيرات</button>
+          <button type="button" className="list-row" onClick={() => onPick('color')}>ألوان العيون</button>
+          <button type="button" className="list-row" onClick={() => onPick('phrase')}>جمل جاهزة</button>
+          <button type="button" className="list-row" onClick={onTheme}>
+            {character === 'simo' ? 'الشخصية: التحويل إلى كاتي' : 'الشخصية: التحويل إلى سيمو'}
+          </button>
+        </div>
+      )}
 
       {open === 'expr' && (
         <div className="popover" role="dialog" aria-label="اختر تعبير">
@@ -188,9 +200,11 @@ export default function Popovers(props: PopoversProps) {
                     borderRadius: '50%',
                     cursor: 'pointer',
                     background: c.color,
-                    border: active ? '3px solid var(--ink)' : '2px solid var(--line)',
-                    boxShadow: `0 0 14px ${c.glow}`,
-                    transform: active ? 'scale(1.1)' : 'none',
+                    border: '2px solid var(--ink)',
+                    boxShadow: active
+                      ? '0 0 0 2px var(--surface), 0 0 0 5px var(--ink)'
+                      : '0 3px 0 var(--ink)',
+                    transform: active ? 'translateY(3px)' : 'none',
                     transition: 'transform var(--dur-fast), border-color var(--dur-fast)',
                   }}
                 />

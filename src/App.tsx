@@ -38,6 +38,7 @@ export default function App() {
   const [open, setOpen] = useState<PopoverId>(null);
   const [micOn, setMicOn] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const [draft, setDraft] = useState('');
 
   const characterName = NAMES[settings.character];
 
@@ -270,6 +271,15 @@ export default function App() {
     say({ t: p, e: 'happy' });
   };
 
+  const onSend = (ev: React.FormEvent) => {
+    ev.preventDefault();
+    const t = draft.trim();
+    if (!t) return;
+    setDraft('');
+    setOpen(null);
+    handleTranscript(t, true);
+  };
+
   const mode = thinking ? 'thinking' : voice.speaking ? 'speaking' : voice.listening ? 'listening' : 'idle';
 
   return (
@@ -282,7 +292,25 @@ export default function App() {
         bubbles={bubbles}
         characterName={characterName}
         onRetry={onRetryMic}
-      />
+      >
+        <form className="composer" onSubmit={onSend}>
+          <label className="label composer-label" htmlFor="msg">اكتب رسالة</label>
+          <div className="composer-row">
+            <input
+              id="msg"
+              className="field"
+              type="text"
+              value={draft}
+              maxLength={300}
+              enterKeyHint="send"
+              placeholder="اكتب رسالتك هنا"
+              autoComplete="off"
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <button type="submit" className="btn btn-primary" disabled={!draft.trim()}>إرسال</button>
+          </div>
+        </form>
+      </Face>
       <div className="rail-wrap">
       <SidePanel
         listening={voice.listening}
@@ -305,6 +333,9 @@ export default function App() {
         onColor={onColor}
         onPhrase={onPhrase}
         onClose={() => setOpen(null)}
+        character={settings.character}
+        onTheme={onTheme}
+        onPick={(id) => setOpen(id)}
       />
       </div>
     </main>
