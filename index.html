@@ -3,907 +3,782 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Marik — Voice Bot</title>
+  <title>Pipu & Kate - AI Companion</title>
   <style>
     :root {
-      /* Theme: Black Ice */
-      --eye-color: #7fdfff;
-      --eye-glow: rgba(127, 223, 255, 0.8);
-      --accent: #5ec8ff;
-      --bg-1: #070912;
-      --bg-2: #111a2e;
-      --panel: rgba(255,255,255,0.07);
-      --panel-strong: rgba(255,255,255,0.12);
-      --border: rgba(127,223,255,0.2);
-      --shell-1: #1a2030;
-      --shell-2: #0a0d16;
-      --cheek: rgba(127, 223, 255, 0.35);
-    }
-    body.theme-pink {
-      --eye-color: #ff8fcf;
-      --eye-glow: rgba(255, 143, 207, 0.8);
-      --accent: #ff6bb5;
-      --bg-1: #1a0814;
-      --bg-2: #2e1130;
-      --border: rgba(255,143,207,0.22);
-      --shell-1: #2a1830;
-      --shell-2: #140818;
-      --cheek: rgba(255, 143, 207, 0.4);
+      --primary: #00d8e6;
+      --glow: rgba(0, 216, 230, 0.45);
+      --glow-deep: rgba(0, 140, 160, 0.25);
+      --bg-top: #070913;
+      --bg-bottom: #0d1224;
+      --shell-bg: linear-gradient(145deg, #161822, #090a0f);
     }
 
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body.theme-kate {
+      --primary: #ff4da6;
+      --glow: rgba(255, 77, 166, 0.45);
+      --glow-deep: rgba(180, 20, 100, 0.28);
+      --bg-top: #120710;
+      --bg-bottom: #1e0b1a;
+      --shell-bg: linear-gradient(145deg, #22131d, #0d060b);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     body {
       min-height: 100vh;
-      background: radial-gradient(ellipse at 50% 30%, var(--bg-2), var(--bg-1));
-      font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif;
+      background: radial-gradient(circle at 50% 35%, var(--bg-bottom), var(--bg-top));
+      font-family: "Segoe UI", Tahoma, sans-serif;
       color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      overflow: hidden;
+      transition: background 0.6s ease;
+      position: relative;
+    }
+
+    /* خلفية النجوم الخفيفة */
+    .stars {
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1.5px 1.5px at 70% 20%, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,0.35), transparent),
+        radial-gradient(1.5px 1.5px at 85% 65%, rgba(255,255,255,0.25), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* الشريط العلوي */
+    .top-bar {
+      width: 100%;
+      max-width: 480px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .persona-switcher {
+      display: flex;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 30px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .persona-btn {
+      border: none;
+      background: transparent;
+      color: #aaa;
+      padding: 6px 16px;
+      border-radius: 24px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .persona-btn.active {
+      background: var(--primary);
+      color: #050508;
+      box-shadow: 0 0 14px var(--glow);
+    }
+
+    .icon-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
-      transition: background 0.6s;
-      position: relative;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: 0.2s;
     }
+    .icon-btn:active { transform: scale(0.92); }
 
-    /* Snow particles */
-    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-    .particle {
-      position: absolute; width: 4px; height: 4px;
-      background: rgba(255,255,255,0.5); border-radius: 50%;
-      animation: fall linear infinite;
-    }
-    @keyframes fall {
-      0% { transform: translateY(-10px) translateX(0); opacity:0; }
-      10% { opacity:0.7; }
-      90% { opacity:0.5; }
-      100% { transform: translateY(110vh) translateX(30px); opacity:0; }
-    }
-
-    /* ===== Layout: face + side icons ===== */
-    .app {
-      position: relative;
-      z-index: 2;
+    /* مسرح الوجه */
+    .stage-wrapper {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 18px;
-      padding: 20px;
+      z-index: 5;
+      margin: auto 0;
     }
 
-    /* ===== FACE STAGE ===== */
     .stage {
       position: relative;
-      width: 300px; height: 300px;
-      flex-shrink: 0;
-    }
-
-    .ring {
-      position: absolute; inset: -16px;
-      border-radius: 46%;
-      border: 3px solid transparent;
-      transition: all 0.4s; pointer-events: none;
-    }
-    .ring.listening { border-color: var(--eye-color); box-shadow: 0 0 30px var(--eye-glow); animation: pulseRing 1.4s infinite; }
-    .ring.speaking  { border-color: #ffd93d; box-shadow: 0 0 30px rgba(255,217,61,0.7); animation: pulseRing 0.9s infinite; }
-    .ring.thinking  { border-color: #b66dff; box-shadow: 0 0 30px rgba(182,109,255,0.7); animation: pulseRing 1.8s infinite; }
-    @keyframes pulseRing {
-      0%,100% { transform: scale(1); opacity:0.6; }
-      50% { transform: scale(1.05); opacity:1; }
+      width: 300px;
+      height: 300px;
     }
 
     .head {
-      position: absolute; inset: 0;
-      border-radius: 42%;
-      background: linear-gradient(150deg, var(--shell-1), var(--shell-2));
-      box-shadow: 0 22px 50px rgba(0,0,0,0.6), inset 0 -10px 26px rgba(0,0,0,0.5), inset 0 8px 20px rgba(255,255,255,0.07);
-      display: flex; align-items: center; justify-content: center;
-    }
-    .head::before {
-      content: ""; position: absolute;
-      top: 14%; left: 50%; transform: translateX(-50%);
-      width: 42%; height: 9%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
-      border-radius: 50%; filter: blur(3px);
+      position: absolute;
+      inset: 0;
+      border-radius: 36%;
+      background: var(--shell-bg);
+      box-shadow:
+        0 25px 60px rgba(0,0,0,0.85),
+        0 0 35px var(--glow-deep),
+        inset 0 -8px 25px rgba(0,0,0,0.7),
+        inset 0 4px 15px rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.5s, box-shadow 0.5s;
     }
 
     .screen {
-      width: 76%; height: 64%;
-      background: #03040a;
-      border-radius: 30%;
-      position: relative; overflow: hidden;
-      box-shadow: inset 0 0 22px rgba(0,0,0,0.95), 0 0 2px rgba(255,255,255,0.08);
-    }
-    .screen-shine {
-      position: absolute; top:0; left:0; right:0; height:38%;
-      background: linear-gradient(180deg, rgba(255,255,255,0.09), transparent);
-      border-radius: 30% 30% 50% 50%; pointer-events: none;
-    }
-
-    .face-svg {
-      position: absolute; top: 24%; left: 50%;
-      transform: translateX(-50%);
-      width: 82%; height: 52%;
-    }
-
-    .mouth {
-      position: absolute; bottom: 17%; left: 50%;
-      transform: translateX(-50%);
-      width: 13%; height: 4px;
-      background: var(--eye-color); border-radius: 4px;
-      box-shadow: 0 0 10px var(--eye-glow);
-      transition: all 0.12s ease;
-    }
-    .speaking .mouth { animation: talkMouth 0.16s infinite alternate ease-in-out; }
-    @keyframes talkMouth {
-      0% { height:4px; width:13%; border-radius:4px; }
-      100% { height:13px; width:10%; border-radius:50%; }
-    }
-    .expr-happy .mouth { width:22%; height:9px; border-radius:0 0 50% 50%; animation:none; }
-    .expr-sad .mouth { width:18%; height:8px; border-radius:50% 50% 0 0; animation:none; }
-    .expr-surprised .mouth { width:9%; height:12px; border-radius:50%; animation:none; }
-    .expr-sleepy .mouth { width:14%; height:3px; opacity:0.6; animation:none; }
-
-    .cheek {
-      position: absolute; bottom: 29%;
-      width: 14%; height: 7%;
-      background: var(--cheek); border-radius: 50%;
-      filter: blur(3px); opacity: 0;
-      transition: opacity 0.4s;
-    }
-    .cheek.left { left: 13%; }
-    .cheek.right { right: 13%; }
-    .expr-happy .cheek, .expr-love .cheek, .expr-shy .cheek { opacity: 0.9; }
-
-    /* Bubbles */
-    .bubbles {
-      position: absolute; top: -6px; right: -4px;
-      display: flex; flex-direction: column; gap: 5px; z-index: 5;
-    }
-    .bubble {
-      background: var(--panel-strong);
-      border: 1px solid var(--border);
-      backdrop-filter: blur(8px);
-      border-radius: 12px; padding: 4px 9px;
-      font-size: 0.74rem; color: #fff; white-space: nowrap;
-      opacity: 0; transform: translateY(6px) scale(0.9);
-      transition: all 0.3s; pointer-events: none;
-    }
-    .bubble.show { opacity:1; transform: translateY(0) scale(1); }
-
-    /* Caption under face */
-    .caption {
-      position: absolute;
-      bottom: -64px; left: 50%;
-      transform: translateX(-50%);
-      width: 340px; max-width: 90vw;
-      min-height: 50px;
-      text-align: center;
-      padding: 10px 16px;
-      font-size: 0.9rem; color: #e6e6e6;
-      background: var(--panel);
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      line-height: 1.55;
-      backdrop-filter: blur(6px);
-    }
-    .caption .marik { color: var(--eye-color); font-weight: 700; }
-    .caption .you   { color: #ffd93d; font-weight: 700; }
-
-    /* ===== SIDE ICON PANEL ===== */
-    .side-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 10px 8px;
-      backdrop-filter: blur(10px);
-      max-height: 460px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-    }
-    .side-panel::-webkit-scrollbar { width: 4px; }
-    .side-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-    .icon-btn {
-      width: 46px; height: 46px;
-      border-radius: 14px;
-      background: var(--panel-strong);
-      border: 1px solid transparent;
-      color: #fff;
-      font-size: 1.3rem;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s;
+      width: 78%;
+      height: 66%;
+      background: #030306;
+      border-radius: 26%;
       position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 25px #000, 0 0 2px rgba(255,255,255,0.08);
     }
-    .icon-btn:hover { background: rgba(255,255,255,0.18); transform: scale(1.06); }
-    .icon-btn.active { background: var(--eye-color); color: #000; border-color: var(--eye-color); }
-    .icon-btn .tooltip {
+
+    .screen-shine {
       position: absolute;
-      right: 56px; top: 50%;
-      transform: translateY(-50%);
-      background: #000;
-      color: #fff;
-      font-size: 0.72rem;
-      padding: 4px 9px;
-      border-radius: 8px;
-      white-space: nowrap;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.2s;
-    }
-    .icon-btn:hover .tooltip { opacity: 1; }
-
-    .icon-btn.recording {
-      background: #ff4d4d; border-color: #ff4d4d; color: #fff;
-      animation: micPulse 1s infinite;
-    }
-    @keyframes micPulse {
-      0%,100% { box-shadow: 0 0 8px rgba(255,77,77,0.5); }
-      50% { box-shadow: 0 0 22px rgba(255,77,77,0.95); }
+      top: 0; left: 0; right: 0;
+      height: 32%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), transparent);
+      border-radius: 26% 26% 50% 50%;
+      pointer-events: none;
     }
 
-    /* Divider in side panel */
-    .divider { height: 1px; background: var(--border); margin: 4px 6px; }
-
-    /* Section label */
-    .sec-label {
-      font-size: 0.62rem; color: #778;
-      text-align: center; margin: 2px 0;
-      letter-spacing: 0.5px;
-    }
-
-    /* ===== Popover panels (expressions, colors, phrases) ===== */
-    .popover {
+    /* العيون المستطيلة بتوهج داكن */
+    .eyes-container {
       position: absolute;
-      right: 70px; top: 50%;
-      transform: translateY(-50%) translateX(20px);
-      background: var(--panel-strong);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 12px;
-      backdrop-filter: blur(14px);
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 20;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-      max-width: 240px;
-    }
-    .popover.open {
+      top: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 78%;
+      height: 34%;
       display: flex;
-      animation: popIn 0.25s ease;
-    }
-    @keyframes popIn {
-      from { opacity: 0; transform: translateY(-50%) translateX(20px); }
-      to   { opacity: 1; transform: translateY(-50%) translateX(0); }
-    }
-    .popover-title {
-      font-size: 0.72rem; color: #9ab; margin-bottom: 2px;
+      justify-content: space-between;
+      align-items: center;
+      transition: transform 0.3s ease;
     }
 
-    .pop-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-    .pop-grid.exprs .icon-btn { width: 38px; height: 38px; font-size: 1.1rem; }
-    .pop-grid.colors .color-dot {
-      width: 30px; height: 30px; border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.25);
-      cursor: pointer; transition: transform 0.2s;
+    .eye-unit {
+      position: relative;
+      width: 41%;
+      height: 100%;
     }
-    .pop-grid.colors .color-dot:hover,
-    .pop-grid.colors .color-dot.active { transform: scale(1.2); border-color: #fff; }
 
-    .pop-phrase {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      color: #dde;
+    .eyebrow {
+      position: absolute;
+      top: -14px;
+      left: 10%;
+      width: 80%;
+      height: 5px;
+      background: var(--primary);
+      border-radius: 6px;
+      box-shadow: 0 0 10px var(--glow);
+      transition: all 0.3s ease;
+    }
+
+    /* ميل الحواجب حسب الشخصية */
+    body:not(.theme-kate) .eye-unit.left .eyebrow { transform: rotate(6deg); }
+    body:not(.theme-kate) .eye-unit.right .eyebrow { transform: rotate(-6deg); }
+    body.theme-kate .eye-unit.left .eyebrow { transform: rotate(-8deg) translateY(-2px); border-radius: 50% 50% 0 0; }
+    body.theme-kate .eye-unit.right .eyebrow { transform: rotate(8deg) translateY(-2px); border-radius: 50% 50% 0 0; }
+
+    .eye {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 40% 35%, var(--primary), #08121e 135%);
+      border-radius: 14px; /* مستطيلة بحواف ناعمة */
+      box-shadow:
+        0 0 16px var(--glow),
+        inset 0 0 12px rgba(0, 0, 0, 0.75);
+      position: relative;
+      animation: blink 4.5s infinite ease-in-out;
+      transition: all 0.3s ease;
+    }
+
+    body.theme-kate .eye {
+      background: radial-gradient(circle at 40% 35%, var(--primary), #1f0614 135%);
+      border-radius: 16px;
+    }
+
+    /* رموش لطيفة لشخصية Kate */
+    .lash {
+      display: none;
+      position: absolute;
+      top: 12%;
+      width: 10px;
+      height: 4px;
+      background: var(--primary);
+      border-radius: 4px;
+      box-shadow: 0 0 8px var(--glow);
+    }
+    body.theme-kate .lash { display: block; }
+    .eye-unit.left .lash { left: -7px; transform: rotate(25deg); }
+    .eye-unit.right .lash { right: -7px; transform: rotate(-25deg); }
+
+    /* لمعة العين */
+    .eye::after {
+      content: "";
+      position: absolute;
+      top: 16%;
+      right: 18%;
+      width: 22%;
+      height: 20%;
+      background: rgba(255,255,255,0.7);
+      border-radius: 4px;
+    }
+
+    /* حالات العيون */
+    .state-listening .eye {
+      transform: scale(1.08);
+      box-shadow: 0 0 26px var(--glow), inset 0 0 8px rgba(0,0,0,0.5);
+    }
+    .state-thinking .eyes-container {
+      animation: lookAround 1.4s infinite ease-in-out;
+    }
+    .state-happy .eye {
+      border-radius: 22px 22px 8px 8px;
+      height: 75%;
+      margin-top: 12%;
+    }
+
+    /* الفم والموجة الصوتية */
+    .mouth-area {
+      position: absolute;
+      bottom: 18%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 44%;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mouth-idle {
+      width: 26px;
+      height: 5px;
+      background: var(--primary);
+      border-radius: 6px;
+      box-shadow: 0 0 10px var(--glow);
+      transition: all 0.3s ease;
+    }
+
+    body.theme-kate .mouth-idle {
+      width: 24px;
+      height: 10px;
+      background: transparent;
+      border-bottom: 3.5px solid var(--primary);
+      border-radius: 0 0 14px 14px;
+      box-shadow: 0 4px 10px var(--glow);
+    }
+
+    /* موجة الصوت عند التحدث */
+    .wave-bars {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 22px;
+    }
+    .state-speaking .mouth-idle { display: none; }
+    .state-speaking .wave-bars { display: flex; }
+
+    .wave-bars span {
+      width: 4px;
+      height: 6px;
+      background: var(--primary);
+      border-radius: 4px;
+      box-shadow: 0 0 8px var(--glow);
+      animation: wave 0.5s infinite ease-in-out;
+    }
+    .wave-bars span:nth-child(2) { animation-delay: 0.1s; }
+    .wave-bars span:nth-child(3) { animation-delay: 0.2s; }
+    .wave-bars span:nth-child(4) { animation-delay: 0.3s; }
+    .wave-bars span:nth-child(5) { animation-delay: 0.15s; }
+
+    @keyframes wave {
+      0%, 100% { height: 5px; }
+      50% { height: 20px; }
+    }
+    @keyframes blink {
+      0%, 46%, 52%, 100% { transform: scaleY(1); }
+      49% { transform: scaleY(0.08); }
+    }
+    @keyframes lookAround {
+      0%, 100% { transform: translateX(-50%); }
+      30% { transform: translateX(-58%) translateY(-4px); }
+      70% { transform: translateX(-42%) translateY(-4px); }
+    }
+
+    /* نص الحالة والرد */
+    .status-badge {
+      margin-top: 16px;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      color: var(--primary);
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+
+    .caption-box {
+      margin-top: 10px;
+      max-width: 88vw;
+      min-height: 44px;
+      text-align: center;
+      font-size: 0.95rem;
+      color: #d8dce8;
+      line-height: 1.5;
+      padding: 0 12px;
+    }
+
+    /* شريط التحكم السفلي */
+    .bottom-dock {
+      width: 100%;
+      max-width: 440px;
+      padding: 18px 24px 28px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .dock-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .dock-btn.mic-main {
+      width: 68px;
+      height: 68px;
+      font-size: 1.6rem;
+      background: rgba(255,255,255,0.08);
+      border: 2px solid var(--primary);
+      box-shadow: 0 0 20px var(--glow-deep);
+    }
+
+    .dock-btn.mic-main.recording {
+      background: var(--primary);
+      color: #050508;
+      box-shadow: 0 0 30px var(--glow);
+      transform: scale(1.08);
+    }
+
+    /* النوافذ المنبثقة (الإعدادات / المهام / الكتابة) */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.78);
+      backdrop-filter: blur(8px);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal.open { display: flex; }
+
+    .modal-card {
+      width: 100%;
+      max-width: 400px;
+      background: #121521;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-header h3 { font-size: 1.05rem; color: var(--primary); }
+
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 5px; }
+    .field input, .field textarea {
+      width: 100%;
+      background: #090b12;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .field input:focus { border-color: var(--primary); }
+
+    .save-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: #050508;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.05);
       padding: 8px 12px;
       border-radius: 10px;
-      font-size: 0.82rem;
-      cursor: pointer;
-      text-align: right;
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
-    .pop-phrase:hover { background: rgba(255,255,255,0.14); border-color: var(--eye-color); }
-
-    /* Backdrop to close popovers */
-    .backdrop {
-      position: fixed; inset: 0;
-      z-index: 15;
-      display: none;
-    }
-    .backdrop.show { display: block; }
-
-    /* Volume indicator */
-    .vol-bar {
-      width: 4px;
-      background: var(--eye-color);
-      border-radius: 2px;
-      transition: height 0.1s;
-    }
-
-    @media (max-width: 420px) {
-      .stage { width: 240px; height: 240px; }
-      .app { gap: 10px; padding: 12px; }
-      .side-panel { padding: 8px 6px; }
-      .icon-btn { width: 40px; height: 40px; font-size: 1.1rem; }
-      .caption { width: 280px; bottom: -58px; }
+      margin-bottom: 8px;
+      font-size: 0.9rem;
     }
   </style>
 </head>
-<body class="theme-ice">
+<body>
+  <div class="stars"></div>
 
-  <div class="particles" id="particles"></div>
+  <!-- الشريط العلوي -->
+  <div class="top-bar">
+    <button class="icon-btn" onclick="openModal('tasksModal')" title="المهام">📋</button>
 
-  <div class="app">
+    <div class="persona-switcher">
+      <button class="persona-btn active" id="btn-pipu" onclick="setPersona('pipu')">Pipu</button>
+      <button class="persona-btn" id="btn-kate" onclick="setPersona('kate')">Kate</button>
+    </div>
 
-    <!-- ===== FACE ===== -->
-    <div class="stage" id="stage">
-      <div class="ring" id="ring"></div>
+    <button class="icon-btn" onclick="openModal('settingsModal')" title="إعدادات API">⚙️</button>
+  </div>
+
+  <!-- مسرح الوجه -->
+  <div class="stage-wrapper">
+    <div class="stage" id="faceStage">
       <div class="head">
         <div class="screen">
           <div class="screen-shine"></div>
-
-          <svg class="face-svg" id="faceSvg" viewBox="0 0 200 110" preserveAspectRatio="xMidYMid meet">
-            <g id="eyeL">
-              <ellipse cx="55" cy="55" rx="28" ry="34" fill="var(--eye-color)" filter="url(#glowL)"/>
-              <circle cx="62" cy="44" r="6" fill="rgba(255,255,255,0.85)"/>
-            </g>
-            <g id="eyeR">
-              <ellipse cx="145" cy="55" rx="28" ry="34" fill="var(--eye-color)" filter="url(#glowR)"/>
-              <circle cx="152" cy="44" r="6" fill="rgba(255,255,255,0.85)"/>
-            </g>
-            <defs>
-              <filter id="glowL" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="4" result="b"/>
-                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-              <filter id="glowR" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="4" result="b"/>
-                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-            </defs>
-          </svg>
-
-          <div class="cheek left"></div>
-          <div class="cheek right"></div>
-          <div class="mouth" id="mouth"></div>
-
-          <div class="bubbles" id="bubbles">
-            <div class="bubble" id="bubble1"></div>
-            <div class="bubble" id="bubble2"></div>
+          <div class="eyes-container">
+            <div class="eye-unit left">
+              <div class="eyebrow"></div>
+              <div class="lash"></div>
+              <div class="eye"></div>
+            </div>
+            <div class="eye-unit right">
+              <div class="eyebrow"></div>
+              <div class="lash"></div>
+              <div class="eye"></div>
+            </div>
+          </div>
+          <div class="mouth-area">
+            <div class="mouth-idle"></div>
+            <div class="wave-bars">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
           </div>
         </div>
       </div>
-
-      <!-- Caption -->
-      <div class="caption" id="caption">
-        <span class="marik">Marik:</span> اضغط المايك وابدأ الكلام معي 🎤
-      </div>
     </div>
 
-    <!-- ===== SIDE ICON PANEL ===== -->
-    <div class="side-panel" id="sidePanel">
-
-      <!-- Mic (auto-listen) -->
-      <button class="icon-btn active" id="micIcon" title="مايك">
-        🎙️
-        <span class="tooltip">استماع</span>
-      </button>
-
-      <!-- Greet -->
-      <button class="icon-btn" id="greetIcon" title="ترحيب">
-        👋
-        <span class="tooltip">رحّب</span>
-      </button>
-
-      <!-- Joke -->
-      <button class="icon-btn" id="jokeIcon" title="نكتة">
-        😂
-        <span class="tooltip">نكتة</span>
-      </button>
-
-      <!-- Stop -->
-      <button class="icon-btn" id="stopIcon" title="إيقاف">
-        ⏹️
-        <span class="tooltip">إيقاف</span>
-      </button>
-
-      <div class="divider"></div>
-      <div class="sec-label">تعبير</div>
-
-      <!-- Expressions -->
-      <button class="icon-btn" id="exprIcon" title="تعبيرات">
-        😊
-        <span class="tooltip">تعبيرات</span>
-      </button>
-
-      <div class="divider"></div>
-      <div class="sec-label">لون</div>
-
-      <!-- Colors -->
-      <button class="icon-btn" id="colorIcon" title="ألوان">
-        🎨
-        <span class="tooltip">ألوان</span>
-      </button>
-
-      <!-- Theme -->
-      <button class="icon-btn" id="themeIcon" title="ثيم">
-        🧊
-        <span class="tooltip">ثيم</span>
-      </button>
-
-      <div class="divider"></div>
-      <div class="sec-label">جمل</div>
-
-      <!-- Phrases -->
-      <button class="icon-btn" id="phraseIcon" title="جمل">
-        💬
-        <span class="tooltip">جمل جاهزة</span>
-      </button>
-
-    </div>
-
-    <!-- ===== POPOVERS ===== -->
-    <div class="backdrop" id="backdrop"></div>
-
-    <!-- Expressions popover -->
-    <div class="popover" id="exprPop">
-      <div class="popover-title">اختر تعبير</div>
-      <div class="pop-grid exprs">
-        <button class="icon-btn active" data-expr="neutral">😐</button>
-        <button class="icon-btn" data-expr="happy">😄</button>
-        <button class="icon-btn" data-expr="sad">😢</button>
-        <button class="icon-btn" data-expr="surprised">😲</button>
-        <button class="icon-btn" data-expr="love">😍</button>
-        <button class="icon-btn" data-expr="sleepy">😴</button>
-        <button class="icon-btn" data-expr="wink">😉</button>
-        <button class="icon-btn" data-expr="shy">😳</button>
-        <button class="icon-btn" data-expr="angry">😠</button>
-      </div>
-    </div>
-
-    <!-- Colors popover -->
-    <div class="popover" id="colorPop">
-      <div class="popover-title">لون العيون</div>
-      <div class="pop-grid colors">
-        <div class="color-dot active" style="background:#7fdfff;box-shadow:0 0 8px #7fdfff" data-c="#7fdfff" data-g="rgba(127,223,255,0.8)"></div>
-        <div class="color-dot" style="background:#ff8fcf;box-shadow:0 0 8px #ff8fcf" data-c="#ff8fcf" data-g="rgba(255,143,207,0.8)"></div>
-        <div class="color-dot" style="background:#b66dff;box-shadow:0 0 8px #b66dff" data-c="#b66dff" data-g="rgba(182,109,255,0.8)"></div>
-        <div class="color-dot" style="background:#39ff14;box-shadow:0 0 8px #39ff14" data-c="#39ff14" data-g="rgba(57,255,20,0.8)"></div>
-        <div class="color-dot" style="background:#ffd93d;box-shadow:0 0 8px #ffd93d" data-c="#ffd93d" data-g="rgba(255,217,61,0.8)"></div>
-        <div class="color-dot" style="background:#ff4d4d;box-shadow:0 0 8px #ff4d4d" data-c="#ff4d4d" data-g="rgba(255,77,77,0.8)"></div>
-      </div>
-    </div>
-
-    <!-- Phrases popover -->
-    <div class="popover" id="phrasePop">
-      <div class="popover-title">جمل جاهزة</div>
-      <button class="pop-phrase">مرحباً! أنا Marik، تشرفت بلقائك</button>
-      <button class="pop-phrase">كيف حالك اليوم يا صديقي؟</button>
-      <button class="pop-phrase">أنا روبوت صغير لكن قلبي كبير</button>
-      <button class="pop-phrase">إيش رأيك نلعب لعبة كلمات؟</button>
-      <button class="pop-phrase">شكراً لك، أنت شخص رائع</button>
-    </div>
-
+    <div class="status-badge" id="statusText">PIPU READY</div>
+    <div class="caption-box" id="captionBox">اضغط على الميكروفون للتحدث معي...</div>
   </div>
 
-  <audio id="ttsAudio" preload="auto"></audio>
+  <!-- شريط التحكم السفلي -->
+  <div class="bottom-dock">
+    <button class="dock-btn" onclick="openModal('chatModal')" title="محادثة نصية">💬</button>
+    <button class="dock-btn mic-main" id="micBtn" onclick="toggleVoice()" title="تحدث">🎙️</button>
+    <button class="dock-btn" onclick="stopSpeaking()" title="إيقاف الصوت">⏹️</button>
+  </div>
+
+  <!-- نافذة إعدادات Custom API -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚙️ إعدادات Custom API</h3>
+        <button class="icon-btn" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+      <div class="field">
+        <label>رابط المزود (API Endpoint URL)</label>
+        <input type="text" id="apiUrl" placeholder="https://api.openai.com/v1/chat/completions" />
+      </div>
+      <div class="field">
+        <label>مفتاح الوصول (API Key)</label>
+        <input type="password" id="apiKey" placeholder="sk-..." />
+      </div>
+      <div class="field">
+        <label>اسم النموذج (Model Name)</label>
+        <input type="text" id="apiModel" placeholder="gpt-4o-mini / claude-3-5-sonnet" />
+      </div>
+      <button class="save-btn" onclick="saveSettings()">حفظ الإعدادات محلياً</button>
+    </div>
+  </div>
+
+  <!-- نافذة المهام -->
+  <div class="modal" id="tasksModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📋 قائمة مهامي</h3>
+        <button class="icon-btn" onclick="closeModal('tasksModal')">✕</button>
+      </div>
+      <div class="field" style="display:flex; gap:8px;">
+        <input type="text" id="newTaskInput" placeholder="أضف مهمة جديدة..." />
+        <button class="icon-btn" style="border-radius:10px; background:var(--primary); color:#000;" onclick="addTask()">+</button>
+      </div>
+      <div id="tasksList" style="max-height:220px; overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- نافذة الكتابة السريعة -->
+  <div class="modal" id="chatModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>💬 رسالة سريعة</h3>
+        <button class="icon-btn" onclick="closeModal('chatModal')">✕</button>
+      </div>
+      <div class="field">
+        <textarea id="textInput" rows="3" placeholder="اكتب رسالتك هنا..."></textarea>
+      </div>
+      <button class="save-btn" onclick="sendTextMessage()">إرسال</button>
+    </div>
+  </div>
 
   <script>
-    /* =========================================================
-       Marik — clean voice bot with side settings icons
-       Mic auto-starts on first interaction
-       ========================================================= */
+    let currentPersona = localStorage.getItem('marik_persona') || 'pipu';
+    let isListening = false;
+    let recognition = null;
+    let chatHistory = [];
 
-    const root = document.documentElement;
-    const body = document.body;
-    const ring = document.getElementById('ring');
-    const stage = document.getElementById('stage');
-    const caption = document.getElementById('caption');
-    const ttsAudio = document.getElementById('ttsAudio');
-    const eyeL = document.getElementById('eyeL');
-    const eyeR = document.getElementById('eyeR');
-    const bubble1 = document.getElementById('bubble1');
-    const bubble2 = document.getElementById('bubble2');
-    const backdrop = document.getElementById('backdrop');
-
-    /* ---------- Snow ---------- */
-    (function(){
-      const c = document.getElementById('particles');
-      for (let i=0;i<26;i++){
-        const p = document.createElement('div');
-        p.className='particle';
-        p.style.left = Math.random()*100 + '%';
-        p.style.animationDuration = (6 + Math.random()*8) + 's';
-        p.style.animationDelay = (-Math.random()*10) + 's';
-        p.style.opacity = 0.3 + Math.random()*0.5;
-        const s = 2 + Math.random()*4;
-        p.style.width = s+'px'; p.style.height = s+'px';
-        c.appendChild(p);
-      }
-    })();
-
-    /* ---------- Theme ---------- */
-    let isPink = false;
-    const themeIcon = document.getElementById('themeIcon');
-    themeIcon.addEventListener('click', () => {
-      isPink = !isPink;
-      body.classList.toggle('theme-pink', isPink);
-      body.classList.toggle('theme-ice', !isPink);
-      themeIcon.textContent = isPink ? '🌸' : '🧊';
-    });
-
-    /* ---------- Popover toggle ---------- */
-    function openPopover(id) {
-      document.querySelectorAll('.popover').forEach(p => p.classList.remove('open'));
-      backdrop.classList.add('show');
-      const pop = document.getElementById(id);
-      pop.classList.add('open');
-      // Position popover to the left of the side panel
-      const panel = document.getElementById('sidePanel');
-      const rect = panel.getBoundingClientRect();
-      pop.style.right = (window.innerWidth - rect.left + 10) + 'px';
-      pop.style.top = '50%';
-    }
-    function closePopovers() {
-      document.querySelectorAll('.popover').forEach(p => p.classList.remove('open'));
-      backdrop.classList.remove('show');
-    }
-    backdrop.addEventListener('click', closePopovers);
-
-    document.getElementById('exprIcon').addEventListener('click', () => openPopover('exprPop'));
-    document.getElementById('colorIcon').addEventListener('click', () => openPopover('colorPop'));
-    document.getElementById('phraseIcon').addEventListener('click', () => openPopover('phrasePop'));
-
-    /* ---------- Color dots ---------- */
-    document.querySelectorAll('.color-dot').forEach(d => {
-      d.addEventListener('click', () => {
-        document.querySelectorAll('.color-dot').forEach(x=>x.classList.remove('active'));
-        d.classList.add('active');
-        root.style.setProperty('--eye-color', d.dataset.c);
-        root.style.setProperty('--eye-glow', d.dataset.g);
-      });
-    });
-
-    /* ---------- Expressions ---------- */
-    const expressions = {
-      neutral: {
-        L:'<ellipse cx="55" cy="55" rx="28" ry="34" fill="var(--eye-color)"/><circle cx="62" cy="44" r="6" fill="rgba(255,255,255,0.85)"/>',
-        R:'<ellipse cx="145" cy="55" rx="28" ry="34" fill="var(--eye-color)"/><circle cx="152" cy="44" r="6" fill="rgba(255,255,255,0.85)"/>'
+    const personas = {
+      pipu: {
+        name: 'PIPU',
+        pitch: 0.95,
+        rate: 1.05,
+        greeting: 'أهلاً سيمو! أنا Pipu، جاهز للبرمجة والأتمتة. بماذا نبدأ؟',
+        systemPrompt: 'أنت Pipu، مساعد ذكي ظريف، سريع البديهة، وخبير تقني تتحدث باللهجة العربية الودودة والمختصرة. ردودك قصيرة ومباشرة لتناسب النطق الصوتي.'
       },
-      happy: {
-        L:'<path d="M30,60 Q55,25 80,60" stroke="var(--eye-color)" stroke-width="14" fill="none" stroke-linecap="round"/>',
-        R:'<path d="M120,60 Q145,25 170,60" stroke="var(--eye-color)" stroke-width="14" fill="none" stroke-linecap="round"/>'
-      },
-      sad: {
-        L:'<path d="M30,45 Q55,75 80,45" stroke="var(--eye-color)" stroke-width="14" fill="none" stroke-linecap="round"/>',
-        R:'<path d="M120,45 Q145,75 170,45" stroke="var(--eye-color)" stroke-width="14" fill="none" stroke-linecap="round"/>'
-      },
-      surprised: {
-        L:'<circle cx="55" cy="55" r="22" fill="var(--eye-color)"/><circle cx="60" cy="48" r="5" fill="rgba(255,255,255,0.85)"/>',
-        R:'<circle cx="145" cy="55" r="22" fill="var(--eye-color)"/><circle cx="150" cy="48" r="5" fill="rgba(255,255,255,0.85)"/>'
-      },
-      love: {
-        L:'<path d="M55,70 C30,50 35,25 55,35 C75,25 80,50 55,70 Z" fill="#ff4d6d"/>',
-        R:'<path d="M145,70 C120,50 125,25 145,35 C165,25 170,50 145,70 Z" fill="#ff4d6d"/>'
-      },
-      sleepy: {
-        L:'<path d="M30,55 Q55,55 80,55" stroke="var(--eye-color)" stroke-width="10" fill="none" stroke-linecap="round"/>',
-        R:'<path d="M120,55 Q145,55 170,55" stroke="var(--eye-color)" stroke-width="10" fill="none" stroke-linecap="round"/>'
-      },
-      wink: {
-        L:'<ellipse cx="55" cy="55" rx="28" ry="34" fill="var(--eye-color)"/><circle cx="62" cy="44" r="6" fill="rgba(255,255,255,0.85)"/>',
-        R:'<path d="M120,55 Q145,55 170,55" stroke="var(--eye-color)" stroke-width="12" fill="none" stroke-linecap="round"/>'
-      },
-      shy: {
-        L:'<ellipse cx="55" cy="58" rx="24" ry="20" fill="var(--eye-color)"/><circle cx="60" cy="52" r="5" fill="rgba(255,255,255,0.8)"/>',
-        R:'<ellipse cx="145" cy="58" rx="24" ry="20" fill="var(--eye-color)"/><circle cx="150" cy="52" r="5" fill="rgba(255,255,255,0.8)"/>'
-      },
-      angry: {
-        L:'<path d="M28,40 L82,55" stroke="var(--eye-color)" stroke-width="10" stroke-linecap="round"/><ellipse cx="55" cy="62" rx="18" ry="14" fill="var(--eye-color)"/>',
-        R:'<path d="M172,40 L118,55" stroke="var(--eye-color)" stroke-width="10" stroke-linecap="round"/><ellipse cx="145" cy="62" rx="18" ry="14" fill="var(--eye-color)"/>'
+      kate: {
+        name: 'KATE',
+        pitch: 1.25,
+        rate: 1.02,
+        greeting: 'مرحباً سيمو! أنا Kate، سعيدة جداً برؤيتك اليوم. كيف أقدر أساعدك؟',
+        systemPrompt: 'أنتِ Kate، مساعدة ذكية لطيفة، ظريفة، ومشجعة تتحدثين بالعربية بأسلوب دافئ ومرح. اجعلي ردودكِ قصيرة وواضحة لتناسب المحادثة الصوتية.'
       }
     };
 
-    function setExpression(name) {
-      const ex = expressions[name] || expressions.neutral;
-      eyeL.innerHTML = ex.L;
-      eyeR.innerHTML = ex.R;
-      stage.className = 'stage';
-      if (name !== 'neutral') stage.classList.add('expr-' + name);
-      document.querySelectorAll('#exprPop .icon-btn').forEach(b => b.classList.toggle('active', b.dataset.expr === name));
+    // تهيئة الشخصية
+    function setPersona(p) {
+      currentPersona = p;
+      localStorage.setItem('marik_persona', p);
+      document.body.classList.toggle('theme-kate', p === 'kate');
+      document.getElementById('btn-pipu').classList.toggle('active', p === 'pipu');
+      document.getElementById('btn-kate').classList.toggle('active', p === 'kate');
+      setFaceState('happy', `${personas[p].name} READY`);
+      document.getElementById('captionBox').innerText = personas[p].greeting;
+      chatHistory = [];
     }
 
-    document.querySelectorAll('#exprPop .icon-btn').forEach(b => {
-      b.addEventListener('click', () => {
-        setExpression(b.dataset.expr);
-        showBubble(b.dataset.expr);
-        closePopovers();
-      });
-    });
-
-    /* ---------- Bubbles ---------- */
-    const bubbleTexts = {
-      happy:['ياي! 😄','سعيد!'], sad:['أوه... 😢','حزين'],
-      surprised:['واااو! 😲','مفاجأة!'], love:['أحبك ❤️','قلبي'],
-      sleepy:['نعساان 😴','تصبحون'], wink:'غمزة 😉',
-      shy:'خجلان 😳', angry:'متعصب 😠', neutral:null
-    };
-    function showBubble(name) {
-      const txt = bubbleTexts[name];
-      bubble1.classList.remove('show'); bubble2.classList.remove('show');
-      if (!txt) return;
-      if (Array.isArray(txt)) {
-        bubble1.textContent = txt[0]; bubble1.classList.add('show');
-        bubble2.textContent = txt[1]; bubble2.classList.add('show');
-      } else {
-        bubble1.textContent = txt; bubble1.classList.add('show');
-      }
+    function setFaceState(state, label) {
+      const stage = document.getElementById('faceStage');
+      stage.className = 'stage' + (state ? ` state-${state}` : '');
+      if (label) document.getElementById('statusText').innerText = label;
     }
 
-    /* ---------- Mode ---------- */
-    function setMode(mode) {
-      ring.classList.remove('listening','speaking','thinking');
-      stage.classList.remove('speaking');
-      if (mode === 'listening') ring.classList.add('listening');
-      else if (mode === 'speaking') { ring.classList.add('speaking'); stage.classList.add('speaking'); }
-      else if (mode === 'thinking') ring.classList.add('thinking');
+    // النوافذ
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    // حفظ إعدادات API
+    function saveSettings() {
+      localStorage.setItem('custom_api_url', document.getElementById('apiUrl').value.trim());
+      localStorage.setItem('custom_api_key', document.getElementById('apiKey').value.trim());
+      localStorage.setItem('custom_api_model', document.getElementById('apiModel').value.trim());
+      closeModal('settingsModal');
+      speakText('تم حفظ إعدادات المزود بنجاح!');
     }
 
-    /* =========================================================
-       CUSTOM TTS — multiple endpoints for reliability
-       1) Google Translate TTS (fetch audio file)
-       2) Fallback: VoiceRSS-style / direct audio src
-       3) Final fallback: Web Speech API
-       ========================================================= */
-    function customTTS(text, onEnd) {
-      const cleaned = text.replace(/[<>&#]/g,'').slice(0, 200);
-      setMode('speaking');
-      caption.innerHTML = '<span class="marik">Marik:</span> ' + text;
-
-      // Build Google Translate TTS URL (returns mp3)
-      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ar&q=' + encodeURIComponent(cleaned);
-
-      // Method 1: direct audio src (most reliable, no CORS issue for <audio>)
-      ttsAudio.crossOrigin = 'anonymous';
-      ttsAudio.src = url;
-      ttsAudio.load();
-
-      let ended = false;
-      const finish = () => {
-        if (ended) return;
-        ended = true;
-        if (onEnd) onEnd();
-        else setMode('idle');
-      };
-
-      ttsAudio.oncanplay = () => {
-        ttsAudio.play().catch(() => {
-          // play blocked → try WebSpeech
-          webSpeechFallback(text, onEnd);
-        });
-      };
-      ttsAudio.onended = () => { finish(); };
-      ttsAudio.onerror = () => {
-        // direct src failed (CORS) → try fetch blob
-        fetch(url)
-          .then(r => r.blob())
-          .then(blob => {
-            ttsAudio.crossOrigin = null;
-            ttsAudio.src = URL.createObjectURL(blob);
-            ttsAudio.load();
-            ttsAudio.oncanplay = () => ttsAudio.play().catch(() => webSpeechFallback(text, onEnd));
-            ttsAudio.onended = () => { URL.revokeObjectURL(ttsAudio.src); finish(); };
-            ttsAudio.onerror = () => webSpeechFallback(text, onEnd);
-          })
-          .catch(() => webSpeechFallback(text, onEnd));
-      };
-
-      // Safety timeout: if nothing happens in 6s, try WebSpeech
-      setTimeout(() => {
-        if (!ended && ttsAudio.readyState < 2) webSpeechFallback(text, onEnd);
-      }, 6000);
+    function loadSettings() {
+      document.getElementById('apiUrl').value = localStorage.getItem('custom_api_url') || '';
+      document.getElementById('apiKey').value = localStorage.getItem('custom_api_key') || '';
+      document.getElementById('apiModel').value = localStorage.getItem('custom_api_model') || '';
     }
 
-    function webSpeechFallback(text, onEnd) {
-      const synth = window.speechSynthesis;
-      if (!synth) { setMode('idle'); return; }
-      synth.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'ar-SA';
-      u.rate = 1.0; u.pitch = 1.5; u.volume = 1;
-      const voices = synth.getVoices();
-      const arV = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
-      if (arV) u.voice = arV;
-      u.onend = () => { if (onEnd) onEnd(); else setMode('idle'); };
-      u.onerror = () => setMode('idle');
-      synth.speak(u);
-    }
-
-    /* ---------- Speak ---------- */
-    function marikSay(text, expr) {
-      const e = expr || 'happy';
-      setExpression(e);
-      showBubble(e);
-      customTTS(text, () => {
-        setMode('idle');
-        setTimeout(() => {
-          if (ring.classList.contains('speaking') || ring.classList.contains('listening')) return;
-          setExpression('neutral'); showBubble('neutral');
-        }, 1500);
-        // Auto-resume listening after speaking
-        setTimeout(() => { startListening(); }, 600);
-      });
-    }
-
-    /* ---------- Greet / Joke / Stop ---------- */
-    const welcomes = [
-      {t:'أهلاً وسهلاً! أنا Marik، سعيد جداً بلقائك. كيف حالك اليوم؟', e:'happy'},
-      {t:'مرحباً يا صديقي! تشرفت بمعرفتك. إيش حابب نسوي؟', e:'wink'},
-      {t:'هلا والله! اسمي Marik وأنا روبوت مرح. خلك معي!', e:'happy'},
-      {t:'السلام عليكم ورحمة الله! نورتني يا غالي.', e:'shy'}
-    ];
-    document.getElementById('greetIcon').addEventListener('click', () => {
-      const w = welcomes[Math.floor(Math.random()*welcomes.length)];
-      marikSay(w.t, w.e);
-    });
-
-    const jokes = [
-      {t:'ليش الروبوت ما يقدر يأكل؟ لأنه يخاف ينقص بطاريته هههه!', e:'happy'},
-      {t:'إيش قال الروبوت للكمبيوتر؟ عندي ذاكرة بس ناسي!', e:'wink'},
-      {t:'مارك اخترع الروبوت اليلعب شطرنج؟ عشان ما يخسر قدامنا!', e:'surprised'},
-      {t:'أنا Marik وما أعرف أنام، بس لو نمت... مين بيفيقني؟', e:'sleepy'}
-    ];
-    document.getElementById('jokeIcon').addEventListener('click', () => {
-      const j = jokes[Math.floor(Math.random()*jokes.length)];
-      marikSay(j.t, j.e);
-    });
-
-    document.getElementById('stopIcon').addEventListener('click', () => {
-      ttsAudio.pause();
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      stopListening();
-      setMode('idle');
-      setExpression('neutral');
-      showBubble('neutral');
-      caption.innerHTML = '<span class="marik">Marik:</span> حسناً، توقفت. اضغط المايك للبدء من جديد 🎤';
-    });
-
-    /* ---------- Phrases ---------- */
-    document.querySelectorAll('.pop-phrase').forEach(p => {
-      p.addEventListener('click', () => {
-        marikSay(p.textContent, 'happy');
-        closePopovers();
-      });
-    });
-
-    /* ---------- Speech recognition (auto-listen) ---------- */
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition = null, recognizing = false, autoListen = true;
-    const micIcon = document.getElementById('micIcon');
-
-    if (SR) {
-      recognition = new SR();
+    // إعداد الميكروفون (Web Speech API)
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
       recognition.lang = 'ar-SA';
+      recognition.interimResults = false;
       recognition.continuous = false;
-      recognition.interimResults = true;
 
       recognition.onstart = () => {
-        recognizing = true;
-        micIcon.classList.add('recording');
-        setMode('listening');
-        setExpression('surprised');
-        showBubble('surprised');
-        caption.innerHTML = '<span class="you">أنت:</span> ...أستمع';
+        isListening = true;
+        document.getElementById('micBtn').classList.add('recording');
+        setFaceState('listening', 'LISTENING...');
       };
-      recognition.onresult = (e) => {
-        let interim='', final='';
-        for (let i=e.resultIndex;i<e.results.length;i++){
-          const tr = e.results[i][0].transcript;
-          if (e.results[i].isFinal) final+=tr; else interim+=tr;
-        }
-        caption.innerHTML = '<span class="you">أنت:</span> ' + (final||interim);
-        if (final) { autoListen = false; replyToUser(final.trim()); }
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('captionBox').innerText = `أنت: "${transcript}"`;
+        processUserInput(transcript);
       };
+
       recognition.onerror = (e) => {
-        if (e.error === 'not-allowed')
-          caption.innerHTML = '⚠️ اسمح باستخدام الميكروفون من إعدادات المتصفح.';
-        else if (e.error === 'no-speech') {
-          // auto-restart on no-speech if still in listening mode
-          if (autoListen) { setTimeout(() => startListening(), 400); return; }
-        } else {
-          caption.innerHTML = '⚠️ خطأ: ' + e.error;
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('recording');
+        setFaceState('', `${personas[currentPersona].name} READY`);
+        if (e.error === 'not-allowed') {
+          document.getElementById('captionBox').innerText = 'يرجى السماح بصلاحية الميكروفون في المتصفح (HTTPS أو localhost).';
         }
-        stopListening();
       };
+
       recognition.onend = () => {
-        stopListening();
-        // Auto-restart listening if mode is still auto
-        if (autoListen && !ring.classList.contains('speaking')) {
-          setTimeout(() => startListening(), 500);
-        }
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('recording');
       };
     }
 
-    function startListening() {
-      if (!recognition || recognizing) return;
-      if (window.speechSynthesis && window.speechSynthesis.speaking) return;
-      try { recognition.start(); } catch(e){ /* already started */ }
-    }
-    function stopListening() {
-      recognizing = false;
-      micIcon.classList.remove('recording');
-    }
-
-    micIcon.addEventListener('click', () => {
-      if (recognizing) {
-        autoListen = false;
+    function toggleVoice() {
+      if (!recognition) {
+        alert('متصفحك لا يدعم التعرف الصوتي المباشر، جرب Chrome.');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      if (isListening) {
         recognition.stop();
-        micIcon.classList.remove('active');
       } else {
-        autoListen = true;
-        micIcon.classList.add('active');
-        startListening();
+        recognition.start();
       }
-    });
-
-    /* ---------- Conversation ---------- */
-    function replyToUser(text) {
-      const t = text.toLowerCase();
-      let reply, expr;
-      if (/(سلام|السلام|أهلا|اهلا|مرحب|هلا|هاي|hello|hi)/.test(t)) {
-        reply='وعليكم السلام! أهلاً بك يا صديقي. إيش حابب نسوي اليوم؟'; expr='happy';
-      } else if (/(كيف حالك|كيفك|عامل ايه|شلونك|كيف الحال|اخبارك)/.test(t)) {
-        reply='أنا بخير والحمد لله، شكراً لسؤالك! وأنت كيف حالك؟'; expr='happy';
-      } else if (/(اسمك|من انت|مين انت|تعرف نفسك)/.test(t)) {
-        reply='أنا Marik، روبوت صغير ظريف، أحب أتكلم مع الناس الطيبين مثلك!'; expr='wink';
-      } else if (/(شكرا|مشكور|تسلم|thanks|thank)/.test(t)) {
-        reply='العفو يا غالي! هذا واجبي. أي خدمة ثانية؟'; expr='shy';
-      } else if (/(باي|مع السلامة|وداع|تصبح على خير)/.test(t)) {
-        reply='مع السلامة! كان وقت جميل معاك. ترجع متى ما حبيت.'; expr='sleepy';
-      } else if (/(احبك|حبيت|sweet|love)/.test(t)) {
-        reply='وأنا كمان أحبك يا صديقي!'; expr='love';
-      } else if (/(نكتة|ضحكني|اضحك|joke)/.test(t)) {
-        reply='ليش الروبوت ما يأكل؟ لأنه يخاف بطاريته تنقص! هههه'; expr='happy';
-      } else if (/(تعبان|حزين|زعلان|sad)/.test(t)) {
-        reply='لا تحزن يا صديقي، أنا معك. إيش صار؟ احكِ لي.'; expr='sad';
-      } else if (/(نعسان|sleep|sleepy)/.test(t)) {
-        reply='تعال نرقد شوي... تصبح على خير.'; expr='sleepy';
-      } else if (/(غاضب|زعلت|angry)/.test(t)) {
-        reply='لا تغضب، خذ نفس عميق. أنا هنا عشانك.'; expr='angry';
-      } else {
-        const fb=[
-          {t:'تمام! فهمت كلامك. احكِ لي أكثر.', e:'happy'},
-          {t:'كلامك حلو! إيش بعد كذا؟', e:'wink'},
-          {t:'أها، مثير للاهتمام. تابع أنا معك.', e:'surprised'},
-          {t:'حلو! خلينا نكمل الحديث.', e:'happy'}
-        ];
-        const f=fb[Math.floor(Math.random()*fb.length)];
-        reply=f.t; expr=f.e;
-      }
-      marikSay(reply, expr);
     }
 
-    /* ---------- Auto start: greet + listen on first interaction ---------- */
-    let started = false;
-    function firstInteraction() {
-      if (started) return;
-      started = true;
-      // Greet first, then auto-listen
-      marikSay('أهلاً! أنا Marik، أنا أستمع لك الآن... تكلم!', 'happy');
+    function sendTextMessage() {
+      const input = document.getElementById('textInput');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      closeModal('chatModal');
+      document.getElementById('captionBox').innerText = `أنت: "${text}"`;
+      processUserInput(text);
     }
-    window.addEventListener('load', () => {
-      // Browsers require a user gesture for audio/mic
-      const trigger = () => {
-        firstInteraction();
-        document.removeEventListener('click', trigger);
-        document.removeEventListener('touchstart', trigger);
-      };
-      document.addEventListener('click', trigger, { once: true });
-      document.addEventListener('touchstart', trigger, { once: true });
-    });
+
+    // الاتصال بـ Custom API
+    async function processUserInput(userText) {
+      const apiUrl = localStorage.getItem('custom_api_url');
+      const apiKey = localStorage.getItem('custom_api_key');
+      const apiModel = localStorage.getItem('custom_api_model') || 'gpt-4o-mini';
+
+      if (!apiUrl || !apiKey) {
+        const msg = 'يرجى إدخال رابط ومفتاح Custom API من أيقونة الإعدادات في الأعلى أولاً.';
+        document.getElementById('captionBox').innerText = msg;
+        speakText(msg);
+        openModal('settingsModal');
+        return;
+      }
+
+      setFaceState('thinking', 'THINKING...');
+
+      chatHistory.push({ role: 'user', content: userText });
+      if (chatHistory.length > 8) chatHistory = chatHistory.slice(-8);
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: apiModel,
+            messages: [
+              { role: 'system', content: personas[currentPersona].systemPrompt },
+              ...chatHistory
+            ]
+          })
+        });
+
+        const data = await response.json();
+        const reply = data.choices?.[0]?.message?.content || 'لم أستلم رداً واضحاً من المزود.';
+        chatHistory.push({ role: 'assistant', content: reply });
+
+        document.getElementById('captionBox').innerText = reply;
+        speakText(reply);
+      } catch (err) {
+        setFaceState('', 'ERROR');
+        document.getElementById('captionBox').innerText = 'تعذر الاتصال بالمزود: تأكد من الرابط أو إعدادات CORS.';
+      }
+    }
+
+    // النطق الصوتي وتحريك الموجة
+    function speakText(text) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ar-SA';
+      utterance.pitch = personas[currentPersona].pitch;
+      utterance.rate = personas[currentPersona].rate;
+
+      utterance.onstart = () => setFaceState('speaking', 'SPEAKING...');
+      utterance.onend = () => setFaceState('', `${personas[currentPersona].name} READY`);
+      utterance.onerror = () => setFaceState('', `${personas[currentPersona].name} READY`);
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function stopSpeaking() {
+      window.speechSynthesis.cancel();
+      setFaceState('', `${personas[currentPersona].name} READY`);
+    }
+
+    // إدارة المهام
+    function renderTasks() {
+      const tasks = JSON.parse(localStorage.getItem('marik_tasks') || '[]');
+      const list = document.getElementById('tasksList');
+      list.innerHTML = tasks.map((t, i) => `
+        <div class="task-item">
+          <span>${t}</span>
+          <button style="background:none;border:none;color:#ff5555;cursor:pointer;" onclick="deleteTask(${i})">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function addTask() {
+      const inp = document.getElementById('newTaskInput');
+      if (!inp.value.trim()) return;
+      const tasks = JSON.parse(localStorage.getItem('marik_tasks') || '[]');
+      tasks.push(inp.value.trim());
+      localStorage.setItem('marik_tasks', JSON.stringify(tasks));
+      inp.value = '';
+      renderTasks();
+    }
+
+    function deleteTask(idx) {
+      const tasks = JSON.parse(localStorage.getItem('marik_tasks') || '[]');
+      tasks.splice(idx, 1);
+      localStorage.setItem('marik_tasks', JSON.stringify(tasks));
+      renderTasks();
+    }
+
+    loadSettings();
+    renderTasks();
+    setPersona(currentPersona);
   </script>
 </body>
 </html>
