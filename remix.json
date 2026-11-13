@@ -1,0 +1,10 @@
+{
+  "kind": "WEB",
+  "template": "vite-react",
+  "build": {
+    "command": "npm run build",
+    "output": "dist"
+  },
+  "connect": [],
+  "secrets": {}
+}
