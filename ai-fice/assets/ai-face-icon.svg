@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">SimoAI Face</title>
+  <desc id="desc">A friendly luminous digital face on a deep blue starry background.</desc>
+  <defs>
+    <linearGradient id="bg" x1="24" y1="16" x2="232" y2="244" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101D55"/>
+      <stop offset="1" stop-color="#070D25"/>
+    </linearGradient>
+    <linearGradient id="face" x1="60" y1="50" x2="196" y2="210" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#263F99"/>
+      <stop offset="1" stop-color="#15245F"/>
+    </linearGradient>
+    <linearGradient id="eye" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#FFFDF4"/>
+      <stop offset="1" stop-color="#FFC95A"/>
+    </linearGradient>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="58" fill="url(#bg)"/>
+  <g fill="#FFF" opacity=".8">
+    <circle cx="43" cy="61" r="2"/><circle cx="208" cy="47" r="1.6"/>
+    <circle cx="222" cy="143" r="2"/><circle cx="34" cy="175" r="1.5"/>
+    <circle cx="181" cy="216" r="1.4"/><circle cx="76" cy="34" r="1.2"/>
+  </g>
+  <circle cx="128" cy="128" r="87" fill="#101A48" stroke="#526DD1" stroke-opacity=".45" stroke-width="2"/>
+  <path d="M77 130c0-31 22-55 51-55s51 24 51 55-22 55-51 55-51-24-51-55Z" fill="url(#face)" stroke="#7891FF" stroke-opacity=".38" stroke-width="2"/>
+  <g fill="url(#eye)" filter="url(#glow)">
+    <rect x="93" y="111" width="23" height="35" rx="11.5"/>
+    <rect x="140" y="111" width="23" height="35" rx="11.5"/>
+  </g>
+  <path d="M111 161c10 9 24 9 34 0" fill="none" stroke="#FFD36A" stroke-linecap="round" stroke-width="4"/>
+  <path d="M199 77l3.5 8.5L211 89l-8.5 3.5L199 101l-3.5-8.5L187 89l8.5-3.5L199 77Z" fill="#FFD36A"/>
+</svg>
